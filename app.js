@@ -221,6 +221,24 @@ app.post("/add-rental",async(req,res) =>{
     }
 });
 
+app.post("/add-rental_detail",async(req,res) =>{
+    try {
+        const {rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id} = req.body;
+
+        const insertedresult = await pool.query(
+            `INSERT INTO rental_detail (rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id)
+            VALUE(?,?,?,?,?,?,?,?)
+            `,[rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id]
+        )
+
+        console.log("insertedResult:",insertedresult);
+
+        return res.status(201).send({message: "success"});
+    } catch (error) {
+        return res.status(500).send({message: error.message});
+    }
+});
+
 
 
 const PORT = process.env.PORT || 3000
