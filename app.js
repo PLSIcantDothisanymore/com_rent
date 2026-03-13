@@ -149,6 +149,78 @@ app.post("/add-category",async(req,res) =>{
     }
 });
 
+app.post("/add-customer",async(req,res) =>{
+    try {
+        const {customer_id,full_name,phone,identity_proof} = req.body;
+
+        const insertedresult = await pool.query(
+            `INSERT INTO customer (customer_id,full_name,phone,identity_proof)
+            VALUE(?,?,?,?)
+            `,[customer_id,full_name,phone,identity_proof]
+        )
+
+        console.log("insertedResult:",insertedresult);
+
+        return res.status(201).send({message: "success"});
+    } catch (error) {
+        return res.status(500).send({message: error.message});
+    }
+});
+
+app.post("/add-equipment",async(req,res) =>{
+    try {
+        const {equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
+
+        const insertedresult = await pool.query(
+            `INSERT INTO equipment (equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id)
+            VALUE(?,?,?,?,?,?,?,?,?)
+            `,[equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id]
+        )
+
+        console.log("insertedResult:",insertedresult);
+
+        return res.status(201).send({message: "success"});
+    } catch (error) {
+        return res.status(500).send({message: error.message});
+    }
+});
+
+app.post("/add-payment",async(req,res) =>{
+    try {
+        const {payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id} = req.body;
+
+        const insertedresult = await pool.query(
+            `INSERT INTO payment (payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id)
+            VALUE(?,?,?,?,?,?)
+            `,[payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id]
+        )
+
+        console.log("insertedResult:",insertedresult);
+
+        return res.status(201).send({message: "success"});
+    } catch (error) {
+        return res.status(500).send({message: error.message});
+    }
+});
+
+app.post("/add-rental",async(req,res) =>{
+    try {
+        const {rental_id,order_date,total_amount,total_deposit,payment_status,customer_id} = req.body;
+
+        const insertedresult = await pool.query(
+            `INSERT INTO rental (rental_id,order_date,total_amount,total_deposit,payment_status,customer_id)
+            VALUE(?,?,?,?,?,?)
+            `,[rental_id,order_date,total_amount,total_deposit,payment_status,customer_id]
+        )
+
+        console.log("insertedResult:",insertedresult);
+
+        return res.status(201).send({message: "success"});
+    } catch (error) {
+        return res.status(500).send({message: error.message});
+    }
+});
+
 
 
 const PORT = process.env.PORT || 3000
