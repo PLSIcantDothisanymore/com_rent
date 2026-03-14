@@ -384,6 +384,27 @@ app.put("/edit-rental_detail",async(req,res)=>{
     }
 })
 
+app.delete("/delete-category", async (req, res) => {
+    try {
+        // Fix 1: Added { } to pull the exact string/number out of the object
+        const { category_id } = req.query;
+
+        // Fix 2: Added [ ] to get the database result, not the array!
+        const deletetedResult = await pool.query(
+            `DELETE FROM category 
+             WHERE category_id = ?
+            `, [category_id]
+        )
+
+        if (deletetedResult?.affectedRows === 0) {
+            throw new Error("delete error");
+        }
+
+        return res.status(200).send({ message: "success" });
+    } catch (error) {
+        return res.status(500).send({ message: error.message });
+    }
+});
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT,()=>{
