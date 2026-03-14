@@ -1,256 +1,297 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PC Parts Rental - บริการเช่าอุปกรณ์คอมพิวเตอร์</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <header>
-        <h1>PC Parts Rental</h1>
-        <div id="cart-status">
-            🛒 ตะกร้า: <span id="cart-count" style="font-weight: bold;">0</span> ชิ้น 
-            <button onclick="showCartModal()">ดูตะกร้าสินค้า</button>
-        </div>
+      <h1>PC Parts Rental</h1>
+      <div id="cart-status">
+        🛒 ตะกร้า: <span id="cart-count" style="font-weight: bold">0</span> ชิ้น
+        <button onclick="showCartModal()">ดูตะกร้าสินค้า</button>
+      </div>
     </header>
 
     <div class="container">
-        <h2>รายการอุปกรณ์ที่พร้อมให้เช่า</h2>
-        <div class="filter-bar" id="filter-bar">
-            <button class="filter-btn active" onclick="filterCategory('all', this)">ทั้งหมด</button>
-        </div>
-        <div class="product-grid" id="product-container">
-            <p style="text-align: center; width: 100%;">กำลังโหลดข้อมูลอุปกรณ์จาก Backend...</p>
-        </div>
+      <h2>รายการอุปกรณ์ที่พร้อมให้เช่า</h2>
+      <div class="filter-bar" id="filter-bar">
+        <button class="filter-btn active" onclick="filterCategory('all', this)">
+          ทั้งหมด
+        </button>
+      </div>
+      <div class="product-grid" id="product-container">
+        <p style="text-align: center; width: 100%">
+          กำลังโหลดข้อมูลอุปกรณ์จาก Backend...
+        </p>
+      </div>
     </div>
 
     <!-- Cart Modal -->
     <div id="cart-overlay" onclick="handleOverlayClick(event)">
-        <div id="cart-modal">
-            <div class="cart-modal-header">
-                <h3>🛒 ตะกร้าสินค้า (<span id="modal-count">0</span> ชิ้น)</h3>
-                <button class="modal-close-btn" onclick="closeCartModal()">✕</button>
-            </div>
-            <div id="cart-items-list"></div>
-            <div class="cart-modal-footer">
-                <div class="cart-summary">
-                    <span>รวมทั้งหมด</span>
-                    <span><span id="modal-total">0</span> ชิ้น</span>
-                </div>
-                <button class="confirm-btn" id="confirm-btn" onclick="showConfirmDialog()">ยืนยันการจอง</button>
-            </div>
+      <div id="cart-modal">
+        <div class="cart-modal-header">
+          <h3>🛒 ตะกร้าสินค้า (<span id="modal-count">0</span> ชิ้น)</h3>
+          <button class="modal-close-btn" onclick="closeCartModal()">✕</button>
         </div>
+        <div id="cart-items-list"></div>
+        <div class="cart-modal-footer">
+          <div class="cart-summary">
+            <span>รวมทั้งหมด</span>
+            <span><span id="modal-total">0</span> ชิ้น</span>
+          </div>
+          <button
+            class="confirm-btn"
+            id="confirm-btn"
+            onclick="showConfirmDialog()"
+          >
+            ยืนยันการจอง
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Confirm Dialog -->
     <div id="confirm-overlay" onclick="handleConfirmOverlayClick(event)">
-        <div id="confirm-dialog">
-            <p class="confirm-icon">✅</p>
-            <h3>ยืนยันการจอง</h3>
-            <p id="confirm-text" style="color:#666; font-size:14px; margin: 8px 0 24px;"></p>
-            <div class="confirm-actions">
-                <button class="btn-cancel" onclick="hideConfirmDialog()">ยกเลิก</button>
-                <button class="btn-ok" onclick="doConfirm()">ยืนยัน</button>
-            </div>
+      <div id="confirm-dialog">
+        <p class="confirm-icon">✅</p>
+        <h3>ยืนยันการจอง</h3>
+        <p
+          id="confirm-text"
+          style="color: #666; font-size: 14px; margin: 8px 0 24px"
+        ></p>
+        <div class="confirm-actions">
+          <button class="btn-cancel" onclick="hideConfirmDialog()">
+            ยกเลิก
+          </button>
+          <button class="btn-ok" onclick="doConfirm()">ยืนยัน</button>
         </div>
+      </div>
     </div>
 
     <!-- Toast -->
     <div id="toast"></div>
 
     <script>
-        const EQUIPMENT_API = 'http://127.0.0.1:3000/all-equipment';
-        let cart = [];
-        let allProducts = [];
-        let activeCategory = 'all';
+      const EQUIPMENT_API = "http://127.0.0.1:3000/all-equipment";
+      let cart = [];
+      let allProducts = [];
+      let activeCategory = "all";
 
-        // Map category_id → ชื่อ (ตรงกับ DB)
-        const CATEGORY_MAP = {
-            101: 'cpu',
-            102: 'ssd',
-            103: 'RAM',
-            104: 'Graphic Card',
-            105: 'Laptop',
-            106: 'wifi card',
-            107: 'อื่นๆ'
-        };
+      // Map category_id → ชื่อ (ตรงกับ DB)
+      const CATEGORY_MAP = {
+        101: "cpu",
+        102: "ssd",
+        103: "RAM",
+        104: "Graphic Card",
+        105: "Laptop",
+        106: "wifi card",
+        107: "อื่นๆ",
+      };
 
-        // --- ระบบ Filter Category ---
-        function filterCategory(categoryId, btn) {
-            activeCategory = categoryId;
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderProducts();
+      // --- ระบบ Filter Category ---
+      function filterCategory(categoryId, btn) {
+        activeCategory = categoryId;
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderProducts();
+      }
+
+      function buildCategoryButtons() {
+        const bar = document.getElementById("filter-bar");
+        // หา category_id ที่มีจริงใน data
+        const usedIds = [
+          ...new Set(allProducts.map((p) => p.category_id).filter(Boolean)),
+        ];
+        bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory('all', this)">ทั้งหมด</button>`;
+        usedIds.forEach((id) => {
+          const name = CATEGORY_MAP[id] || "category " + id;
+          bar.innerHTML += `<button class="filter-btn" onclick="filterCategory(${id}, this)">${name}</button>`;
+        });
+      }
+
+      function renderProducts() {
+        const container = document.getElementById("product-container");
+        const filtered =
+          activeCategory === "all"
+            ? allProducts
+            : allProducts.filter((p) => p.category_id == activeCategory);
+
+        if (filtered.length === 0) {
+          container.innerHTML =
+            '<p style="text-align:center;width:100%;color:#999;">ไม่มีอุปกรณ์ในหมวดนี้</p>';
+          return;
         }
 
-        function buildCategoryButtons() {
-            const bar = document.getElementById('filter-bar');
-            // หา category_id ที่มีจริงใน data
-            const usedIds = [...new Set(allProducts.map(p => p.category_id).filter(Boolean))];
-            bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory('all', this)">ทั้งหมด</button>`;
-            usedIds.forEach(id => {
-                const name = CATEGORY_MAP[id] || 'category ' + id;
-                bar.innerHTML += `<button class="filter-btn" onclick="filterCategory(${id}, this)">${name}</button>`;
-            });
-        }
+        container.innerHTML = "";
+        filtered.forEach((product) => {
+          const card = document.createElement("div");
+          card.className = "product-card";
+          const categoryName = product.category_name || "ทั่วไป";
+          const brand = product.brand || "No Brand";
+          const model = product.model || "";
+          const dailyRate = product.daily_rate || 0;
+          const equipmentId = product.equipment_id;
+          const displayCategory =
+            CATEGORY_MAP[product.category_id] ||
+            product.category_name ||
+            "ทั่วไป";
 
-        function renderProducts() {
-            const container = document.getElementById('product-container');
-            const filtered = activeCategory === 'all'
-                ? allProducts
-                : allProducts.filter(p => p.category_id == activeCategory);
+          // 💡 จุดที่เพิ่ม: ดึง URL รูปภาพ (เปลี่ยน 'Condition_' เป็นชื่อคอลัมน์จริงที่คุณส่งมาจาก Backend)
+          // ถ้าไม่มีรูป ให้แสดงรูป Placeholder แทน
+          const imageUrl =
+            product.Condition_ ||
+            product.image_url ||
+            "https://placehold.co/400x250?text=No+Image";
 
-            if (filtered.length === 0) {
-                container.innerHTML = '<p style="text-align:center;width:100%;color:#999;">ไม่มีอุปกรณ์ในหมวดนี้</p>';
-                return;
-            }
-
-            container.innerHTML = '';
-            filtered.forEach(product => {
-                const card = document.createElement('div');
-                card.className = 'product-card';
-                const categoryName = product.category_name || 'ทั่วไป';
-                const brand = product.brand || 'No Brand';
-                const model = product.model || '';
-                const dailyRate = product.daily_rate || 0;
-                const equipmentId = product.equipment_id;
-                const displayCategory = CATEGORY_MAP[product.category_id] || product.category_name || 'ทั่วไป';
-                card.innerHTML = `
-                    <div>
-                        <div class="product-category">${displayCategory}</div>
-                        <h3 class="product-name">${brand} ${model}</h3>
-                    </div>
-                    <div>
-                        <div class="product-price">฿${Number(dailyRate).toLocaleString()} / วัน</div>
-                        <button class="rent-btn" onclick="addToCart('${equipmentId}')">เลือกเช่าอุปกรณ์นี้</button>
+          // 💡 จุดที่เพิ่ม: โครงสร้าง HTML ใหม่ที่รองรับรูปภาพ
+          card.innerHTML = `
+                    <img src="${imageUrl}" alt="${brand} ${model}" class="product-image" onerror="this.src='https://placehold.co/400x250?text=Image+Error'">
+                    <div class="product-info-wrapper">
+                        <div>
+                            <div class="product-category">${displayCategory}</div>
+                            <h3 class="product-name">${brand} ${model}</h3>
+                        </div>
+                        <div>
+                            <div class="product-price">฿${Number(dailyRate).toLocaleString()} / วัน</div>
+                            <button class="rent-btn" onclick="addToCart('${equipmentId}')">เลือกเช่าอุปกรณ์นี้</button>
+                        </div>
                     </div>
                 `;
-                container.appendChild(card);
-            });
+          container.appendChild(card);
+        });
+      }
+
+      // --- ระบบตะกร้า ---
+      function addToCart(equipmentId) {
+        const product = allProducts.find((p) => p.equipment_id == equipmentId);
+        const exists = cart.find((item) => item.equipment_id == equipmentId);
+        if (exists) {
+          showToast("อุปกรณ์ชิ้นนี้อยู่ในตะกร้าแล้วครับ");
+        } else {
+          cart.push(product);
+          updateCartUI();
+          showToast("เพิ่ม " + product.brand + " " + product.model + " แล้ว");
+        }
+      }
+
+      function removeFromCart(index) {
+        const name = cart[index].brand + " " + cart[index].model;
+        cart.splice(index, 1);
+        updateCartUI();
+        renderCartItems();
+        showToast("ลบ " + name + " ออกแล้ว");
+      }
+
+      function updateCartUI() {
+        document.getElementById("cart-count").innerText = cart.length;
+      }
+
+      // --- Modal ---
+      function showCartModal() {
+        renderCartItems();
+        document.getElementById("cart-overlay").classList.add("open");
+      }
+
+      function closeCartModal() {
+        document.getElementById("cart-overlay").classList.remove("open");
+      }
+
+      function handleOverlayClick(e) {
+        if (e.target === e.currentTarget) closeCartModal();
+      }
+
+      function renderCartItems() {
+        const list = document.getElementById("cart-items-list");
+        document.getElementById("modal-count").textContent = cart.length;
+        document.getElementById("modal-total").textContent = cart.length;
+        document.getElementById("confirm-btn").disabled = cart.length === 0;
+
+        if (cart.length === 0) {
+          list.innerHTML =
+            '<div class="cart-empty">ตะกร้ายังว่างอยู่ครับ<br>เลือกอุปกรณ์ที่ต้องการก่อนนะ</div>';
+          return;
         }
 
-        // --- ระบบตะกร้า ---
-        function addToCart(equipmentId) {
-            const product = allProducts.find(p => p.equipment_id == equipmentId);
-            const exists = cart.find(item => item.equipment_id == equipmentId);
-            if (exists) {
-                showToast('อุปกรณ์ชิ้นนี้อยู่ในตะกร้าแล้วครับ');
-            } else {
-                cart.push(product);
-                updateCartUI();
-                showToast('เพิ่ม ' + product.brand + ' ' + product.model + ' แล้ว');
-            }
-        }
-
-        function removeFromCart(index) {
-            const name = cart[index].brand + ' ' + cart[index].model;
-            cart.splice(index, 1);
-            updateCartUI();
-            renderCartItems();
-            showToast('ลบ ' + name + ' ออกแล้ว');
-        }
-
-        function updateCartUI() {
-            document.getElementById('cart-count').innerText = cart.length;
-        }
-
-        // --- Modal ---
-        function showCartModal() {
-            renderCartItems();
-            document.getElementById('cart-overlay').classList.add('open');
-        }
-
-        function closeCartModal() {
-            document.getElementById('cart-overlay').classList.remove('open');
-        }
-
-        function handleOverlayClick(e) {
-            if (e.target === e.currentTarget) closeCartModal();
-        }
-
-        function renderCartItems() {
-            const list = document.getElementById('cart-items-list');
-            document.getElementById('modal-count').textContent = cart.length;
-            document.getElementById('modal-total').textContent = cart.length;
-            document.getElementById('confirm-btn').disabled = cart.length === 0;
-
-            if (cart.length === 0) {
-                list.innerHTML = '<div class="cart-empty">ตะกร้ายังว่างอยู่ครับ<br>เลือกอุปกรณ์ที่ต้องการก่อนนะ</div>';
-                return;
-            }
-
-            list.innerHTML = cart.map((item, i) => `
+        list.innerHTML = cart
+          .map(
+            (item, i) => `
                 <div class="cart-item-row">
                     <div class="cart-item-info">
                         <div class="cart-item-name">${item.brand} ${item.model}</div>
-                        <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || 'ทั่วไป'} · ฿${Number(item.daily_rate).toLocaleString()}/วัน</div>
+                        <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || "ทั่วไป"} · ฿${Number(item.daily_rate).toLocaleString()}/วัน</div>
                     </div>
                     <button class="delete-btn" onclick="removeFromCart(${i})" title="ลบ">🗑</button>
                 </div>
-            `).join('');
+            `,
+          )
+          .join("");
+      }
+
+      // --- Confirm Dialog ---
+      function showConfirmDialog() {
+        if (cart.length === 0) return;
+        document.getElementById("confirm-text").textContent =
+          "คุณต้องการจองอุปกรณ์ทั้งหมด " + cart.length + " ชิ้น ใช่หรือไม่?";
+        document.getElementById("confirm-overlay").classList.add("open");
+      }
+
+      function hideConfirmDialog() {
+        document.getElementById("confirm-overlay").classList.remove("open");
+      }
+
+      function handleConfirmOverlayClick(e) {
+        if (e.target === e.currentTarget) hideConfirmDialog();
+      }
+
+      function doConfirm() {
+        hideConfirmDialog();
+        closeCartModal();
+        cart = [];
+        updateCartUI();
+        showToast("จองเรียบร้อยแล้วครับ! 🎉");
+      }
+
+      // --- Toast ---
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2500);
+      }
+
+      // --- ดึงข้อมูลจาก Backend ---
+      async function fetchEquipment() {
+        const container = document.getElementById("product-container");
+        try {
+          const response = await fetch(EQUIPMENT_API);
+          if (!response.ok) throw new Error("ไม่สามารถดึงข้อมูลได้");
+
+          const rawData = await response.json();
+
+          if (Array.isArray(rawData)) allProducts = rawData;
+          else if (rawData && rawData.data) allProducts = rawData.data;
+          else allProducts = [rawData];
+
+          if (allProducts.length === 0) {
+            container.innerHTML =
+              '<p style="text-align:center;width:100%;">ยังไม่มีข้อมูลอุปกรณ์ในระบบ</p>';
+            return;
+          }
+
+          buildCategoryButtons();
+          renderProducts();
+        } catch (error) {
+          console.error("Error:", error);
+          container.innerHTML = `<p class="error-msg">❌ โหลดข้อมูลไม่สำเร็จ: เช็คการรัน Backend (node app.js)</p>`;
         }
+      }
 
-        // --- Confirm Dialog ---
-        function showConfirmDialog() {
-            if (cart.length === 0) return;
-            document.getElementById('confirm-text').textContent =
-                'คุณต้องการจองอุปกรณ์ทั้งหมด ' + cart.length + ' ชิ้น ใช่หรือไม่?';
-            document.getElementById('confirm-overlay').classList.add('open');
-        }
-
-        function hideConfirmDialog() {
-            document.getElementById('confirm-overlay').classList.remove('open');
-        }
-
-        function handleConfirmOverlayClick(e) {
-            if (e.target === e.currentTarget) hideConfirmDialog();
-        }
-
-        function doConfirm() {
-            hideConfirmDialog();
-            closeCartModal();
-            cart = [];
-            updateCartUI();
-            showToast('จองเรียบร้อยแล้วครับ! 🎉');
-        }
-
-        // --- Toast ---
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 2500);
-        }
-
-        // --- ดึงข้อมูลจาก Backend ---
-        async function fetchEquipment() {
-            const container = document.getElementById('product-container');
-            try {
-                const response = await fetch(EQUIPMENT_API);
-                if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลได้');
-
-                const rawData = await response.json();
-
-                if (Array.isArray(rawData)) allProducts = rawData;
-                else if (rawData && rawData.data) allProducts = rawData.data;
-                else allProducts = [rawData];
-
-                if (allProducts.length === 0) {
-                    container.innerHTML = '<p style="text-align:center;width:100%;">ยังไม่มีข้อมูลอุปกรณ์ในระบบ</p>';
-                    return;
-                }
-
-                buildCategoryButtons();
-                renderProducts();
-            } catch (error) {
-                console.error('Error:', error);
-                container.innerHTML = `<p class="error-msg">❌ โหลดข้อมูลไม่สำเร็จ: เช็คการรัน Backend (node app.js)</p>`;
-            }
-        }
-
-        fetchEquipment();
+      fetchEquipment();
     </script>
-</body>
+  </body>
 </html>

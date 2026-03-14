@@ -55,12 +55,13 @@ h2 { font-weight: 500; margin-bottom: 30px; }
     background-color: #ffffff;
     border: 1px solid #eaeaea;
     border-radius: 8px;
-    padding: 20px;
+    /* padding: 20px; <-- ลบบรรทัดนี้ออก */
     text-align: center;
     transition: transform 0.2s, box-shadow 0.2s;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
+    overflow: hidden; /* เพิ่มบรรทัดนี้ เพื่อให้มุมรูปล้อไปกับมุมการ์ด */
 }
 
 .product-card:hover { 
@@ -391,4 +392,21 @@ h2 { font-weight: 500; margin-bottom: 30px; }
 #toast.show {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
+}
+
+
+/* เพิ่ม CSS ใหม่สำหรับรูปภาพและข้อมูล */
+.product-image {
+    width: 100%;
+    height: 180px; /* กำหนดความสูงของรูปภาพตายตัวเพื่อให้การ์ดเท่ากัน */
+    object-fit: cover; /* ทำให้รูปภาพเต็มพื้นที่โดยไม่เสียสัดส่วน */
+    border-bottom: 1px solid #eaeaea;
+}
+
+.product-info-wrapper {
+    padding: 20px; /* ย้าย padding มาไว้ที่กล่องหุ้มข้อมูลแทน */
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    justify-content: space-between;
 }
