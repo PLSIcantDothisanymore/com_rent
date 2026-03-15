@@ -68,7 +68,7 @@
             margin-bottom: 15px;
           "
         >
-          <h3>📦 จัดการอุปกรณ์ (Equipment)</h3>
+          <h3>📦 จัดการอุปกรณ์ (equipment)</h3>
           <button
             onclick="openModal()"
             style="
@@ -257,13 +257,13 @@
           data.forEach((item) => {
             const row = `
                 <tr>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${item.equipment_id}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${item.model}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">${item.brand}</td>
-                    <td style="padding: 10px; border: 1px solid #ddd;">฿${item.daily_rate.toLocaleString()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.equip_id}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.equip_model}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.equip_brand}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">฿${item.equip_rate.toLocaleString()}</td>
                     <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
-                        <button onclick="editItem(${item.equipment_id})" style="background:#f39c12; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Edit</button>
-                        <button onclick="deleteItem(${item.equipment_id})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Delete</button>
+                        <button onclick="editItem(${item.equip_id})" style="background:#f39c12; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Edit</button>
+                        <button onclick="deleteItem(${item.equip_id})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Delete</button>
                     </td>
                 </tr>
             `;
@@ -291,30 +291,25 @@
       }
 
       async function saveEquipment() {
-        // 💡 1. สร้างเลขสุ่ม 10 หลักที่ขึ้นต้นด้วยเลข 3
-        // สูตร: 3,000,000,000 + (สุ่ม 0 ถึง 999,999,999)
-        const randomId = Math.floor(3000000000 + Math.random() * 1000000000);
-
-        // 2. ดึงข้อมูลจากช่อง Input
-        const brand = document.getElementById("new_brand").value;
-        const model = document.getElementById("new_model").value;
-        const daily_rate = document.getElementById("new_rate").value;
+        // 1. ดึงข้อมูลจากช่อง Input
+        const equip_brand = document.getElementById("new_brand").value;
+        const equip_model = document.getElementById("new_model").value;
+        const equip_rate = document.getElementById("new_rate").value;
         const Serial_number = document.getElementById("new_serial").value;
         const category_id = document.getElementById("new_cat").value;
 
-        if (!brand || !model || !daily_rate) {
+        if (!equip_brand || !equip_model || !equip_rate) {
           alert("กรุณากรอกข้อมูลสำคัญให้ครบถ้วน!");
           return;
         }
 
-        // 3. รวมข้อมูลที่จะส่งไป Backend (รวม equipment_id ที่สุ่มมาด้วย)
+        // 2. รวมข้อมูลที่จะส่งไป Backend
         const newData = {
-          equipment_id: randomId, // ส่ง ID ที่สุ่มได้ไป
-          brand: brand,
-          model: model,
-          daily_rate: daily_rate,
+          equip_brand: equip_brand,
+          equip_model: equip_model,
+          equip_rate: Number(equip_rate),
           Serial_number: Serial_number,
-          category_id: category_id,
+          category_id: Number(category_id),
           equipment_status: "Available",
           deposit_fee: 0, // ใส่ค่าพื้นฐานป้องกัน Error null
           Condition_: "Good", // ใส่ค่าพื้นฐานป้องกัน Error null
@@ -332,7 +327,7 @@
           const result = await response.json();
 
           if (response.ok) {
-            alert("🎉 บันทึกสำเร็จ! ID ของคุณคือ: " + randomId);
+            alert("🎉 บันทึกสำเร็จ!");
             closeModal();
             location.reload();
           } else {

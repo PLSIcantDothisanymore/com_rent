@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ชำระเงิน - PC Parts Rental</title>
+    <title>ชำระเงิน - PC Parts rental</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       .form-group {
@@ -32,7 +32,7 @@
   </head>
   <body>
     <header>
-      <h1>PC Parts Rental - หน้าชำระเงิน</h1>
+      <h1>PC Parts rental - หน้าชำระเงิน</h1>
     </header>
 
     <div class="container" style="max-width: 500px; margin-top: 40px">
@@ -40,7 +40,7 @@
         <h2>กรอกข้อมูลการชำระเงิน</h2>
         <form id="paymentForm">
           <div class="form-group">
-            <label>รหัสการเช่า (Rental ID)</label>
+            <label>รหัสการเช่า (rental ID)</label>
             <input type="text" id="rental_id" class="readonly-input" readonly />
           </div>
           <div class="form-group">
@@ -98,21 +98,18 @@
         .addEventListener("submit", async function (e) {
           e.preventDefault();
 
-          // จำลองรหัส Payment (ตามใน Database ของคุณ PAY-XXX หรือเลขรัน)
-          const generatedPaymentId =
-            "PAY-" + Math.floor(100 + Math.random() * 900);
-
           const paymentData = {
-            payment_id: generatedPaymentId,
             payment_date: document.getElementById("payment_date").value,
-            payment_amount: document.getElementById("payment_amount").value,
+            payment_amount: Number(
+              document.getElementById("payment_amount").value,
+            ),
             payment_method: document.getElementById("payment_method").value,
             payment_proof: "NULL",
-            rental_id: document.getElementById("rental_id").value,
+            rental_id: Number(document.getElementById("rental_id").value),
           };
 
           try {
-            const response = await fetch("http://127.0.0.1:3000/add-Payments", {
+            const response = await fetch("http://localhost:3000/add-payment", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(paymentData),

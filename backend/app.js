@@ -13,13 +13,13 @@ app.use(express.urlencoded({ extended: true }));
 // ==========================================
 
 app.post('/register', async (req, res) => {
-    const { user_id, username, password } = req.body;
-    if (!user_id || !username || !password) {
+    const { username, password } = req.body;
+    if (!username || !password) {
         return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
     try {
-        const sql = "INSERT INTO user (user_id, username, password) VALUES (?, ?, ?)";
-        await pool.query(sql, [user_id, username, password]);
+        const sql = "INSERT INTO user (username, password) VALUES (?, ?)";
+        await pool.query(sql, [username, password]);
         return res.status(200).json({ message: "สมัครสมาชิกสำเร็จ" });
     } catch (error) {
         console.error("Register Error:", error);
@@ -49,12 +49,12 @@ app.post('/login', async (req, res) => {
 });
 
 // ==========================================
-// ส่วนที่ 2: จัดการข้อมูลลูกค้า (Customer)
+// ส่วนที่ 2: จัดการข้อมูลลูกค้า (customer)
 // ==========================================
 
 // ตรวจสอบว่า User นี้เคยกรอกข้อมูลลูกค้าหรือยัง
 // ถ้าเคยกรอกแล้ว → ส่งข้อมูลเดิมกลับไปให้หน้าเว็บ pre-fill ในฟอร์มทันที
-app.get('/check-Customer/:id', async (req, res) => {
+app.get('/check-customer/:id', async (req, res) => {
     const userId = req.params.id;
     try {
         const sql = "SELECT * FROM customer WHERE user_id = ?";
@@ -64,13 +64,13 @@ app.get('/check-Customer/:id', async (req, res) => {
         if (rows && rows.length > 0) {
             return res.status(200).json({ 
                 exists: true, 
-                Customer: rows[0]
+                customer: rows[0]
             });
         } else {
             return res.status(200).json({ exists: false });
         }
     } catch (error) {
-        console.error("Check Customer Error:", error);
+        console.error("Check customer Error:", error);
         return res.status(500).json({ message: "ระบบมีปัญหา", errorDetail: error.message });
     }
 });
@@ -78,8 +78,8 @@ app.get('/check-Customer/:id', async (req, res) => {
 // บันทึก/อัปเดตข้อมูลลูกค้า
 // ถ้า User_id นี้มีข้อมูลอยู่แล้ว → UPDATE แทนที่ข้อมูลเดิม
 // ถ้ายังไม่มี → INSERT ใหม่
-app.post('/save-Customer', async (req, res) => {
-    const { cust_id, cust_name, cust_phone, user_id } = req.body;
+app.post('/save-customer', async (req, res) => {
+    const { cust_name, cust_phone, user_id } = req.body;
 
     if (!cust_name || !cust_phone || !user_id) {
         return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
@@ -94,21 +94,33 @@ app.post('/save-Customer', async (req, res) => {
             // มีอยู่แล้ว → UPDATE
             const updateSql = `UPDATE customer SET cust_name = ?, cust_phone = ? WHERE user_id = ?`;
             await pool.query(updateSql, [cust_name, cust_phone, user_id]);
-            return res.status(200).json({ message: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
+            
+            // Return the existing cust_id
+            return res.status(200).json({ 
+                message: "อัปเดตข้อมูลลูกค้าสำเร็จ", 
+                cust_id: rows[0].cust_id 
+            });
         } else {
             // ยังไม่มี → INSERT
-            const insertSql = `INSERT INTO customer (cust_id, cust_name, cust_phone, user_id) VALUES (?, ?, ?, ?)`;
-            await pool.query(insertSql, [cust_id, cust_name, cust_phone, user_id]);
-            return res.status(200).json({ message: "บันทึกข้อมูลลูกค้าสำเร็จ" });
+            const insertSql = `INSERT INTO customer (cust_name, cust_phone, user_id) VALUES (?, ?, ?)`;
+            const insertResult = await pool.query(insertSql, [cust_name, cust_phone, user_id]);
+            
+            const newCustId = insertResult.insertId || (Array.isArray(insertResult) && insertResult[0] && insertResult[0].insertId);
+
+            // Return the new auto-incremented cust_id
+            return res.status(200).json({ 
+                message: "บันทึกข้อมูลลูกค้าสำเร็จ", 
+                cust_id: newCustId 
+            });
         }
 
     } catch (error) {
-        console.error("Save Customer Error:", error);
+        console.error("Save customer Error:", error);
         return res.status(500).json({ message: "บันทึกไม่สำเร็จ", errorDetail: error.message });
     }
 });
 
-app.get("/all-Customer", async (req, res) => {
+app.get("/all-customer", async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM customer");
         return res.json(rows);
@@ -121,7 +133,7 @@ app.get("/all-Customer", async (req, res) => {
 // ส่วนที่ 3: ดึงข้อมูลสินค้าและหมวดหมู่
 // ==========================================
 
-app.get("/all-Categories", async (req, res) => {
+app.get("/all-category", async (req, res) => {
     try {
         const rows = await pool.query("SELECT * FROM category");
         return res.json(rows);
@@ -130,7 +142,7 @@ app.get("/all-Categories", async (req, res) => {
     }
 });
 
-app.get("/all-Equipments", async (req, res) => {
+app.get("/all-equipment", async (req, res) => {
     try {
         const rows = await pool.query("SELECT * FROM equipment");
         return res.json(rows);
@@ -139,7 +151,7 @@ app.get("/all-Equipments", async (req, res) => {
     }
 });
 
-app.get("/Equipments/:id", async (req, res) => {
+app.get("/equipment/:id", async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM equipment WHERE equip_id = ?", [req.params.id]);
         if (rows.length > 0) return res.json(rows[0]);
@@ -149,46 +161,68 @@ app.get("/Equipments/:id", async (req, res) => {
     }
 });
 
+app.post("/add-equipment", async (req, res) => {
+    const { equip_brand, equip_model, equip_rate, Serial_number, category_id, equipment_status, deposit_fee, Condition_ } = req.body;
+    try {
+        const sql = `INSERT INTO equipment (equip_brand, equip_model, equip_rate, Serial_number, category_id, equipment_status, deposit_fee, Condition_) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+        await pool.query(sql, [equip_brand, equip_model, equip_rate, Serial_number, category_id, equipment_status, deposit_fee, Condition_]);
+        return res.status(200).json({ message: "เพิ่มอุปกรณ์สำเร็จ!" });
+    } catch (error) {
+        console.error("Add equipment Error:", error);
+        return res.status(500).json({ message: "เพิ่มอุปกรณ์ไม่สำเร็จ", errorDetail: error.message });
+    }
+});
+
 // ==========================================
 // ส่วนที่ 4: ระบบเช่าและชำระเงิน
 // ==========================================
 
-app.post("/add-Rentals", async (req, res) => {
-    const { rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id } = req.body;
+app.post("/add-rental", async (req, res) => {
+    const { rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id } = req.body;
     try {
-        const sql = `INSERT INTO rental (rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id) 
-                     VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(sql, [rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id]);
-        return res.status(200).json({ message: "สร้างใบสั่งเช่าสำเร็จ!", rental_id: rental_id });
+        const sql = `INSERT INTO rental (rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id) VALUES (?, ?, ?, ?, ?)`;
+        const result = await pool.query(sql, [rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id]);
+        
+        // mysql2 might return [ResultSetHeader, undefined] or just ResultSetHeader depending on promisify
+        let newId = result.insertId;
+        if (newId === undefined && Array.isArray(result) && result[0]) {
+            newId = result[0].insertId;
+        }
+        
+        if (newId === undefined || newId === null) {
+            console.error("Failed to get insertId. Result:", result);
+            return res.status(500).json({ message: "ไม่สามารถดึงรหัสการเช่าใหม่ได้", result: result });
+        }
+
+        console.log("New Rental ID created:", newId);
+        return res.status(200).json({ message: "สร้างใบสั่งเช่าสำเร็จ!", rental_id: newId });
     } catch (error) {
-        console.error("Add Rental Error:", error);
+        console.error("Add rental Error:", error);
         return res.status(500).json({ message: "สร้างใบสั่งเช่าไม่สำเร็จ", errorDetail: error.message });
     }
 });
 
-app.post("/add-Rentals-detail", async (req, res) => {
-    const { rd_id, rd_start_date, rd_end_date, rental_id, equip_id } = req.body;
+app.post("/add-rental-detail", async (req, res) => {
+    const { rd_start_date, rd_end_date, rental_id, equip_id } = req.body;
     try {
-        const sql = `INSERT INTO rental_detail (rd_id, rd_start_date, rd_end_date, rental_id, equip_id) 
-                     VALUES (?, ?, ?, ?, ?)`;
-        await pool.query(sql, [rd_id, rd_start_date, rd_end_date, rental_id, equip_id]);
+        const sql = `INSERT INTO rental_detail (rd_start_date, rd_end_date, rental_id, equip_id) VALUES (?, ?, ?, ?)`;
+        await pool.query(sql, [rd_start_date, rd_end_date, rental_id, equip_id]);
         return res.status(200).json({ message: "บันทึกรายละเอียดการเช่าสำเร็จ!" });
     } catch (error) {
-        console.error("Add Rental Detail Error:", error);
+        console.error("Add rental Detail Error:", error);
         return res.status(500).json({ message: "บันทึกรายละเอียดไม่สำเร็จ", errorDetail: error.message });
     }
 });
 
-app.post("/add-Payments", async (req, res) => {
-    const { payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id } = req.body;
+app.post("/add-payment", async (req, res) => {
+    const { payment_date, payment_amount, payment_method, payment_proof, rental_id } = req.body;
     try {
-        const sql = `INSERT INTO payment (payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id) 
-                     VALUES (?, ?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO payment (payment_date, payment_amount, payment_method, payment_proof, rental_id) VALUES (?, ?, ?, ?, ?)`;
         const proof = payment_proof === "NULL" ? null : payment_proof;
-        await pool.query(sql, [payment_id, payment_date, payment_amount, payment_method, proof, rental_id]);
+        await pool.query(sql, [payment_date, payment_amount, payment_method, proof, rental_id]);
         return res.status(200).json({ message: "บันทึกการชำระเงินสำเร็จ!" });
     } catch (error) {
-        console.error("Add Payment Error:", error);
+        console.error("Add payment Error:", error);
         return res.status(500).json({ message: "บันทึกไม่สำเร็จ", errorDetail: error.message });
     }
 });
@@ -204,411 +238,7 @@ app.use((req, res) => {
     });
 });
 
-
-//get => fecth data(query,params)
-//post => add data(body)
-//put => edit data(body)
-//delete => delete data(query,params)
-app.get("/all-Categories", async (req, res) => {
-    try {
-        // Grab the whole list of rows
-        const rows = await pool.query("SELECT * FROM category");
-        
-        // Send the ENTIRE array (rows), not just the first one (rows[0])
-        return res.json(rows); 
-        
-    } catch (error) {
-        console.error("Database error:", error);
-        return res.status(500).json({ error: "Failed to fetch categories" });
-    }
-});
-
-app.get("/all-Customer", async (req, res) => {
-    try {
-        // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM Customer");
-        
-        // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
-        return res.json(rows);
-        
-    } catch (error) {
-        // ถ้าพัง (เช่น ดาต้าเบสล่ม, หรือยังไม่ได้สร้างตาราง) มันจะเด้งมาตรงนี้ทันที!
-        console.error("เกิดข้อผิดพลาด:", error);
-        
-        // ส่งข้อความกลับไปหา Postman ทันที จะได้ไม่ต้องรอนาน
-        return res.status(500).json({ 
-            message: "ต่อดาต้าเบสไม่สำเร็จ หรือมีบางอย่างผิดพลาด", 
-            errorDetail: error.message 
-        });
-    }
-});
-
-app.get("/all-Equipments", async (req, res) => {
-    try {
-        // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM Equipments");
-        
-        // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
-        return res.json(rows);
-        
-    } catch (error) {
-        // ถ้าพัง (เช่น ดาต้าเบสล่ม, หรือยังไม่ได้สร้างตาราง) มันจะเด้งมาตรงนี้ทันที!
-        console.error("เกิดข้อผิดพลาด:", error);
-        
-        // ส่งข้อความกลับไปหา Postman ทันที จะได้ไม่ต้องรอนาน
-        return res.status(500).json({ 
-            message: "ต่อดาต้าเบสไม่สำเร็จ หรือมีบางอย่างผิดพลาด", 
-            errorDetail: error.message 
-        });
-    }
-});
-
-app.get("/all-Payments", async (req, res) => {
-    try {
-        // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM Payments");
-        
-        // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
-        return res.json(rows);
-        
-    } catch (error) {
-        // ถ้าพัง (เช่น ดาต้าเบสล่ม, หรือยังไม่ได้สร้างตาราง) มันจะเด้งมาตรงนี้ทันที!
-        console.error("เกิดข้อผิดพลาด:", error);
-        
-        // ส่งข้อความกลับไปหา Postman ทันที จะได้ไม่ต้องรอนาน
-        return res.status(500).json({ 
-            message: "ต่อดาต้าเบสไม่สำเร็จ หรือมีบางอย่างผิดพลาด", 
-            errorDetail: error.message 
-        });
-    }
-});
-
-app.get("/all-Rentals", async (req, res) => {
-    try {
-        // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM Rentals");
-        
-        // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
-        return res.json(rows);
-        
-    } catch (error) {
-        // ถ้าพัง (เช่น ดาต้าเบสล่ม, หรือยังไม่ได้สร้างตาราง) มันจะเด้งมาตรงนี้ทันที!
-        console.error("เกิดข้อผิดพลาด:", error);
-        
-        // ส่งข้อความกลับไปหา Postman ทันที จะได้ไม่ต้องรอนาน
-        return res.status(500).json({ 
-            message: "ต่อดาต้าเบสไม่สำเร็จ หรือมีบางอย่างผิดพลาด", 
-            errorDetail: error.message 
-        });
-    }
-});
-
-
-app.get("/all-Rental_details", async (req, res) => {
-    try {
-        // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM Rental_details");
-        
-        // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
-        return res.json(rows);
-        
-    } catch (error) {
-        // ถ้าพัง (เช่น ดาต้าเบสล่ม, หรือยังไม่ได้สร้างตาราง) มันจะเด้งมาตรงนี้ทันที!
-        console.error("เกิดข้อผิดพลาด:", error);
-        
-        // ส่งข้อความกลับไปหา Postman ทันที จะได้ไม่ต้องรอนาน
-        return res.status(500).json({ 
-            message: "ต่อดาต้าเบสไม่สำเร็จ หรือมีบางอย่างผิดพลาด", 
-            errorDetail: error.message 
-        });
-    }
-});
-
-app.post("/add-Categories",async(req,res) =>{
-    try {
-        const {category_id,category_name} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Categories (category_id,category_name)
-            VALUE(?,?)
-            `,[category_id,category_name]
-        )
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.post("/add-Customer",async(req,res) =>{
-    try {
-        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Customer (cust_id,cust_name,cust_phone,identity_proof)
-            VALUE(?,?,?,?)
-            `,[cust_id,cust_name,cust_phone,identity_proof]
-        )
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.post("/add-Equipments",async(req,res) =>{
-    try {
-        const {equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Equipments (equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id)
-            VALUES(?,?,?,?,?,?,?,?,?)
-            `,[equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id]
-        )
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.post("/add-Payments",async(req,res) =>{
-    try {
-        const {payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Payments (payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id)
-            VALUE(?,?,?,?,?,?)
-            `,[payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id]
-        )
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.post("/add-Rentals",async(req,res) =>{
-    try {
-        const {rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Rentals (rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id)
-            VALUE(?,?,?,?,?,?)
-            `,[rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id]
-        )
-        db.query(sql, [values], (err, dbResult) => {
-        if (err) return res.status(500).json({ errorDetail: err.message });
-        
-        // ส่ง ID ที่เพิ่งถูก Auto-increment กลับไปให้ Frontend
-        res.status(200).json({ 
-            message: "Success", 
-            rental_id: dbResult.insertId // dbResult.insertId คือ ID ล่าสุดที่เพิ่งถูกสร้าง
-        }); 
-    }); 
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.post("/add-Rental_details",async(req,res) =>{
-    try {
-        const {rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id} = req.body;
-
-        const insertedresult = await pool.query(
-            `INSERT INTO Rental_details (rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id)
-            VALUE(?,?,?,?,?,?,?,?)
-            `,[rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id]
-        )
-
-        if(insertedresult?.affectedRows === 0){
-            throw new Error("insert error");
-        }
-
-        return res.status(201).send({message: "success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-});
-
-app.put("/edit-Categories",async(req,res)=>{
-    try {
-        const {category_id,category_name} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Categories SET category_name = ?
-            WHERE category_id = ?
-            `,[category_name,category_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Customer",async(req,res)=>{
-    try {
-        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Customer SET cust_name = ?,cust_phone = ?,identity_proof = ?
-            WHERE cust_id = ?
-            `,[cust_name,cust_phone,identity_proof,cust_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Customer",async(req,res)=>{
-    try {
-        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Customer SET cust_name = ?,cust_phone = ?,identity_proof = ?
-            WHERE cust_id = ?
-            `,[cust_name,cust_phone,identity_proof,cust_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Equipments",async(req,res)=>{
-    try {
-        const {equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Equipments SET equip_brand = ?,equip_model = ?,Serial_number = ?,equip_rate = ?,deposit_fee = ?,equipment_status = ?,Condition_ = ?,category_id = ?
-            WHERE equip_id = ?
-            `,[equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id,equip_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Payments",async(req,res)=>{
-    try {
-        const {payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Payments SET payment_date = ?,payment_amount = ?,payment_method = ?,payment_proof = ?,rental_id = ?
-            WHERE payment_id = ?
-            `,[payment_date,payment_amount,payment_method,payment_proof,rental_id,payment_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Rentals",async(req,res)=>{
-    try {
-        const {rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Rentals SET rental_order_date = ?,rental_total_amount = ?,rental_total_deposit = ?,rental_payment_status = ?,cust_id = ?
-            WHERE rental_id = ?
-            `,[rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id,rental_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.put("/edit-Rental_details",async(req,res)=>{
-    try {
-        const {rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id} = req.body;
-
-        const updateResult = await pool.query(
-            `UPDATE Rental_details SET rd_start_date = ?,rd_end_date = ?,rd_actual_return_date = ?,rd_fine_amount = ?,rd_condition_note = ?,rental_id =?,equip_id =?
-            WHERE rd_id = ?
-            `,[rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id,rd_id]
-        )
-        if(updateResult?.affectedRows === 0){
-            throw new Error("update error");
-        }
-
-        return res.status(200).send({message:"success"});
-    } catch (error) {
-        return res.status(500).send({message: error.message});
-    }
-})
-
-app.delete("/delete-Categories", async (req, res) => {
-    try {
-        // Fix 1: Added { } to pull the exact string/number out of the object
-        const { category_id } = req.query;
-
-        // Fix 2: Added [ ] to get the database result, not the array!
-        const deletetedResult = await pool.query(
-            `DELETE FROM Categories 
-             WHERE category_id = ?
-            `, [category_id]
-        )
-
-        if (deletetedResult?.affectedRows === 0) {
-            throw new Error("delete error");
-        }
-
-        return res.status(200).send({ message: "success" });
-    } catch (error) {
-        return res.status(500).send({ message: error.message });
-    }
-});
-
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 The server is running on port ${PORT}`);
+    console.log(`Server is running on http://localhost:${PORT}`);
 });

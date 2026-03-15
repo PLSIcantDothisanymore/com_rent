@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PC Parts Rental - บริการเช่าอุปกรณ์คอมพิวเตอร์</title>
+    <title>PC Parts rental - บริการเช่าอุปกรณ์คอมพิวเตอร์</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       .header-actions {
@@ -39,7 +39,7 @@
   </head>
   <body>
     <header>
-      <h1>PC Parts Rental</h1>
+      <h1>PC Parts rental</h1>
       <div class="header-actions">
         <div id="auth-equip_status"></div>
 
@@ -110,7 +110,7 @@
     <div id="toast"></div>
 
     <script>
-      const EQUIPMENT_API = "http://127.0.0.1:3000/all-Equipments";
+      const EQUIPMENT_API = "http://127.0.0.1:3000/all-equipment";
       let cart = [];
       let allProducts = [];
       let activeCategory = "all";
@@ -134,7 +134,7 @@
         if (userId) {
           // ถ้าล็อคอินแล้ว ให้แสดงปุ่มแก้โปรไฟล์และออกจากระบบ
           authDiv.innerHTML = `
-                    <button class="btn-secondary" onclick="window.location.href='Customer.html'">แก้ไขข้อมูลส่วนตัว</button>
+                    <button class="btn-secondary" onclick="window.location.href='customer.html'">แก้ไขข้อมูลส่วนตัว</button>
                     <button class="btn-danger" onclick="logout()">ออกจากระบบ</button>
                 `;
         } else {
@@ -155,7 +155,7 @@
 
       checkLoginStatus(); // เรียกใช้งานทันที
 
-      // --- ระบบ Filter Category ---
+      // --- ระบบ Filter category ---
       function filterCategory(categoryId, btn) {
         activeCategory = categoryId;
         document
@@ -195,7 +195,7 @@
           const card = document.createElement("div");
           card.className = "product-card";
           const categoryName = product.category_name || "ทั่วไป";
-          const equip_brand = product.equip_brand || "No Brand";
+          const equip_brand = product.equip_brand || "No equip_brand";
           const equip_model = product.equip_model || "";
           const dailyRate = product.equip_rate || 0;
           const equipmentId = product.equip_id;
@@ -331,24 +331,24 @@
         hideConfirmDialog();
         closeCartModal();
 
-        // 3.3 เช็คว่าเคยกรอกข้อมูล Profile (Customer) หรือยัง
+        // 3.3 เช็คว่าเคยกรอกข้อมูล Profile (customer) หรือยัง
         try {
           // เปลี่ยน IP เป็น localhost ให้ตรงกันเพื่อป้องกันปัญหา
           const res = await fetch(
-            `http://localhost:3000/check-Customer/${userId}`,
+            `http://localhost:3000/check-customer/${userId}`,
           );
           const data = await res.json();
 
           // 🟢 แก้ให้ตรงกับหลังบ้าน (ใช้ data.exists แทน data.hasProfile)
           if (data.exists === true) {
             // ถ้ามีประวัติแล้ว ให้จำ cust_id ไว้ แล้วข้ามไปหน้าเช่าหลัก
-            localStorage.setItem("cust_id", data.Customer.cust_id);
+            localStorage.setItem("cust_id", data.customer.cust_id);
             console.log("พบประวัติลูกค้า ไปหน้าเช่าต่อได้เลย");
-            window.location.href = "Rentals.html"; // เปลี่ยนชื่อไฟล์ตรงนี้ให้ตรงกับหน้าเช่าของคุณนะครับ
+            window.location.href = "rental.html"; // เปลี่ยนชื่อไฟล์ตรงนี้ให้ตรงกับหน้าเช่าของคุณนะครับ
           } else {
-            // ถ้ายังไม่เคยกรอกชื่อ-เบอร์โทร ให้ไปหน้า Customer.html
+            // ถ้ายังไม่เคยกรอกชื่อ-เบอร์โทร ให้ไปหน้า customer.html
             alert("กรุณากรอกข้อมูลส่วนตัวครั้งแรกก่อนเริ่มทำการเช่า");
-            window.location.href = "Customer.html";
+            window.location.href = "customer.html";
           }
         } catch (error) {
           console.error("ตรวจสอบข้อมูลลูกค้าล้มเหลว", error);

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ระบุวันเช่าอุปกรณ์ - PC Parts Rental</title>
+    <title>ระบุวันเช่าอุปกรณ์ - PC Parts rental</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       .form-group {
@@ -33,7 +33,7 @@
   </head>
   <body>
     <header>
-      <h1>PC Parts Rental - ระบุวันที่ต้องการเช่า</h1>
+      <h1>PC Parts rental - ระบุวันที่ต้องการเช่า</h1>
     </header>
 
     <div class="container" style="max-width: 500px; margin-top: 40px">
@@ -66,8 +66,12 @@
       const cartData = JSON.parse(localStorage.getItem("cartData")) || [];
       const rentalId = localStorage.getItem("currentRentalId");
 
-      if (!rentalId) {
-        alert("ไม่พบข้อมูลบิลเช่าหลัก กรุณาทำรายการใหม่");
+      console.log("Current Rental ID from LocalStorage:", rentalId);
+
+      if (!rentalId || rentalId === "undefined" || rentalId === "null") {
+        alert(
+          "ไม่พบข้อมูลบิลเช่าหลัก (Rental ID is missing) กรุณาทำรายการใหม่",
+        );
         window.location.href = "index.html";
       }
 
@@ -98,19 +102,22 @@
             // ยิง API วนลูปตามจำนวนของในตะกร้า
             for (let i = 0; i < cartData.length; i++) {
               const item = cartData[i];
-              const detailId =
-                "65690" + Math.floor(1000 + Math.random() * 9000); // จำลอง ID
 
               const detailPayload = {
-                rd_id: detailId,
                 rd_start_date: startDate,
                 rd_end_date: endDate,
-                rental_id: rentalId,
-                equip_id: item.equip_id,
+                rental_id: parseInt(rentalId),
+                equip_id: parseInt(item.equip_id),
               };
 
+              if (isNaN(detailPayload.rental_id)) {
+                throw new Error(
+                  "รหัสการเช่า (Rental ID) ไม่ถูกต้อง กรุณาเริ่มทำรายการใหม่",
+                );
+              }
+
               const response = await fetch(
-                "http://127.0.0.1:3000/add-Rentals-detail",
+                "http://localhost:3000/add-rental-detail",
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -125,7 +132,7 @@
             }
 
             alert("บันทึกรายการอุปกรณ์ทั้งหมดสำเร็จ! ไปหน้าชำระเงินกันเลย");
-            window.location.href = "Payments.html";
+            window.location.href = "payment.html";
           } catch (error) {
             alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
           }

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>สมัครสมาชิก - PC Parts Rental</title>
+    <title>สมัครสมาชิก - PC Parts rental</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -75,17 +75,12 @@
           const username = document.getElementById("reg_username").value;
           const password = document.getElementById("reg_password").value;
 
-          // สุ่ม user_id ขึ้นมาใหม่ (เช่น U123456) เพื่อเอาไปเก็บเป็น Primary Key ในตาราง login
-          // ของใหม่ (สุ่มเป็นตัวเลข 8 หลักล้วนๆ)
-          const userId = Math.floor(10000000 + Math.random() * 90000000);
-
           try {
             // ส่งข้อมูลไปที่ API /register (ที่เราเขียนไว้ใน app.js)
             const res = await fetch("http://localhost:3000/register", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
-                user_id: userId,
                 username: username,
                 password: password,
               }),

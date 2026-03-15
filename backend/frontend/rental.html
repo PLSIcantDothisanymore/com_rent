@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>สร้างใบสั่งเช่า - PC Parts Rental</title>
+    <title>สร้างใบสั่งเช่า - PC Parts rental</title>
     <link rel="stylesheet" href="style.css" />
     <style>
       .form-group {
@@ -33,7 +33,7 @@
   </head>
   <body>
     <header>
-      <h1>PC Parts Rental - เปิดบิลเช่าอุปกรณ์</h1>
+      <h1>PC Parts rental - เปิดบิลเช่าอุปกรณ์</h1>
       <button
         onclick="window.location.href = 'index.html'"
         style="padding: 10px 20px; cursor: pointer"
@@ -47,7 +47,7 @@
         <h2>รายละเอียดการเช่า (บิลหลัก)</h2>
         <form id="rentalForm">
           <div class="form-group">
-            <label>รหัสลูกค้า (Customer ID) 🔒</label>
+            <label>รหัสลูกค้า (customer ID) 🔒</label>
             <input
               type="text"
               id="cust_id"
@@ -70,7 +70,7 @@
             />
           </div>
           <div class="form-group">
-            <label>ค่ามัดจำ (Total Deposit)</label>
+            <label>ค่ามัดจำ (Total equip_deposit)</label>
             <input
               type="number"
               id="rental_total_deposit"
@@ -79,7 +79,7 @@
             />
           </div>
           <div class="form-group">
-            <label>สถานะการชำระเงิน (Payment Status)</label>
+            <label>สถานะการชำระเงิน (payment equip_status)</label>
             <input
               type="text"
               id="rental_payment_status"
@@ -100,6 +100,20 @@
     </div>
 
     <script>
+      // ดึงข้อมูลที่ฝากไว้มาแสดงอัตโนมัติ
+      const userId = localStorage.getItem("user_id");
+      const custId = localStorage.getItem("cust_id");
+      const totalAmount = localStorage.getItem("cartTotalAmount") || 0;
+
+      if (!userId || !custId) {
+        alert("ไม่พบข้อมูลลูกค้า กรุณาเข้าสู่ระบบหรือกรอกข้อมูลส่วนตัวก่อน");
+        window.location.href = "index.html";
+      }
+
+      document.getElementById("cust_id").value = custId;
+      document.getElementById("rental_total_amount").value = totalAmount;
+      document.getElementById("rental_order_date").valueAsDate = new Date();
+
       document
         .getElementById("rentalForm")
         .addEventListener("submit", async (e) => {
@@ -109,19 +123,19 @@
           const rentalData = {
             rental_order_date:
               document.getElementById("rental_order_date").value,
-            rental_total_amount: document.getElementById("rental_total_amount")
-              .value,
-            rental_total_deposit: document.getElementById(
-              "rental_total_deposit",
-            ).value,
+            rental_total_amount:
+              Number(document.getElementById("rental_total_amount").value) || 0,
+            rental_total_deposit:
+              Number(document.getElementById("rental_total_deposit").value) ||
+              0,
             rental_payment_status: document.getElementById(
               "rental_payment_status",
             ).value,
-            cust_id: document.getElementById("cust_id").value,
+            cust_id: Number(document.getElementById("cust_id").value),
           };
 
           try {
-            const response = await fetch("http://localhost:3000/add-Rentals", {
+            const response = await fetch("http://localhost:3000/add-rental", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(rentalData),
@@ -131,14 +145,21 @@
             const result = await response.json();
 
             if (response.ok) {
-              // ⚠️ สำคัญ: เปลี่ยน result.rental_id เป็นชื่อ Key ที่ Backend ของคุณส่งกลับมา
-              // เช่น ถ้า Backend ส่ง res.json({ message: "Success", insertId: 5 }) ให้ใช้ result.insertId
-              const newRentalId = result.rental_id || result.insertId;
+              // Backend returns { message: "...", rental_id: newId }
+              const newRentalId = result.rental_id;
+
+              if (newRentalId === undefined || newRentalId === null) {
+                alert(
+                  "เกิดข้อผิดพลาด: เซิร์ฟเวอร์ไม่ได้ส่งรหัสการเช่ากลับมา (ID is missing)",
+                );
+                console.error("Full result from server:", result);
+                return;
+              }
 
               alert("บันทึกใบสั่งเช่าสำเร็จ! รหัส: " + newRentalId);
 
               // ฝากรหัสการเช่า (ที่ได้จากฐานข้อมูล) ไว้ให้หน้า detail ใช้ต่อ
-              localStorage.setItem("currentRentalId", newRentalId);
+              localStorage.setItem("currentRentalId", newRentalId.toString());
 
               // เด้งไปหน้าระบุวันเช่า
               window.location.href = "detail.html";

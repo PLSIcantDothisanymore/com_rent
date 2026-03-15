@@ -2,13 +2,13 @@
 <html lang="th">
   <head>
     <meta charset="UTF-8" />
-    <title>ข้อมูลส่วนตัว - PC Parts Rental</title>
+    <title>ข้อมูลส่วนตัว - PC Parts rental</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <div class="container" style="max-width: 500px; margin-top: 50px">
       <div class="product-card" style="padding: 30px">
-        <h2>ข้อมูลลูกค้า (Customer Profile)</h2>
+        <h2>ข้อมูลลูกค้า (customer Profile)</h2>
         <form id="customerForm" style="text-align: left">
           <div style="margin-bottom: 15px">
             <label>ชื่อ-นามสกุล (Full Name) *</label>
@@ -20,7 +20,7 @@
             />
           </div>
           <div style="margin-bottom: 15px">
-            <label>เบอร์โทรศัพท์ (Phone) *</label>
+            <label>เบอร์โทรศัพท์ (cust_phone) *</label>
             <input
               type="text"
               id="cust_phone"
@@ -64,14 +64,14 @@
       async function loadProfile() {
         try {
           const res = await fetch(
-            `http://localhost:3000/check-Customer/${userId}`,
+            `http://localhost:3000/check-customer/${userId}`,
           );
           const data = await res.json();
-          if (data.exists && data.Customer) {
+          if (data.exists && data.customer) {
             document.getElementById("cust_name").value =
-              data.Customer.cust_name || "";
+              data.customer.cust_name || "";
             document.getElementById("cust_phone").value =
-              data.Customer.cust_phone || "";
+              data.customer.cust_phone || "";
           }
         } catch (err) {
           console.error("โหลดข้อมูลไม่ได้:", err);
@@ -88,29 +88,29 @@
           return;
         }
 
-        const customerId =
-          "21" + Math.floor(10000000 + Math.random() * 90000000);
-
         const payload = {
-          cust_id: customerId,
           cust_name: cust_name,
           cust_phone: cust_phone,
           user_id: userId,
         };
 
         try {
-          const res = await fetch("http://localhost:3000/save-Customer", {
+          const res = await fetch("http://localhost:3000/save-customer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
           });
 
           if (res.ok) {
+            const data = await res.json();
+            if (data.cust_id) {
+              localStorage.setItem("cust_id", data.cust_id);
+            }
             alert("บันทึกข้อมูลสำเร็จ!");
             // ถ้ามาจากตะกร้า → ไปหน้า Rentals ต่อ
             // ถ้ามาแก้โปรไฟล์เอง → กลับหน้าแรก
             if (cameFromCart) {
-              window.location.href = "Rentals.html";
+              window.location.href = "rental.html";
             } else {
               window.location.href = "index.html";
             }
