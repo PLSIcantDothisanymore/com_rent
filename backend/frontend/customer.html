@@ -14,7 +14,7 @@
             <label>ชื่อ-นามสกุล (Full Name) *</label>
             <input
               type="text"
-              id="full_name"
+              id="cust_name"
               style="width: 100%; padding: 8px; box-sizing: border-box"
               required
             />
@@ -23,7 +23,7 @@
             <label>เบอร์โทรศัพท์ (Phone) *</label>
             <input
               type="text"
-              id="phone"
+              id="cust_phone"
               style="width: 100%; padding: 8px; box-sizing: border-box"
               required
             />
@@ -64,13 +64,14 @@
       async function loadProfile() {
         try {
           const res = await fetch(
-            `http://localhost:3000/check-customer/${userId}`,
+            `http://localhost:3000/check-Customer/${userId}`,
           );
           const data = await res.json();
-          if (data.exists && data.customer) {
-            document.getElementById("full_name").value =
-              data.customer.full_name || "";
-            document.getElementById("phone").value = data.customer.phone || "";
+          if (data.exists && data.Customer) {
+            document.getElementById("cust_name").value =
+              data.Customer.cust_name || "";
+            document.getElementById("cust_phone").value =
+              data.Customer.cust_phone || "";
           }
         } catch (err) {
           console.error("โหลดข้อมูลไม่ได้:", err);
@@ -79,10 +80,10 @@
       loadProfile();
 
       async function saveCustomer() {
-        const full_name = document.getElementById("full_name").value.trim();
-        const phone = document.getElementById("phone").value.trim();
+        const cust_name = document.getElementById("cust_name").value.trim();
+        const cust_phone = document.getElementById("cust_phone").value.trim();
 
-        if (!full_name || !phone) {
+        if (!cust_name || !cust_phone) {
           alert("กรุณากรอกข้อมูลให้ครบถ้วน");
           return;
         }
@@ -91,14 +92,14 @@
           "21" + Math.floor(10000000 + Math.random() * 90000000);
 
         const payload = {
-          customer_id: customerId,
-          full_name: full_name,
-          phone: phone,
+          cust_id: customerId,
+          cust_name: cust_name,
+          cust_phone: cust_phone,
           user_id: userId,
         };
 
         try {
-          const res = await fetch("http://localhost:3000/save-customer", {
+          const res = await fetch("http://localhost:3000/save-Customer", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(payload),
@@ -106,10 +107,10 @@
 
           if (res.ok) {
             alert("บันทึกข้อมูลสำเร็จ!");
-            // ถ้ามาจากตะกร้า → ไปหน้า rental ต่อ
+            // ถ้ามาจากตะกร้า → ไปหน้า Rentals ต่อ
             // ถ้ามาแก้โปรไฟล์เอง → กลับหน้าแรก
             if (cameFromCart) {
-              window.location.href = "rental.html";
+              window.location.href = "Rentals.html";
             } else {
               window.location.href = "index.html";
             }

@@ -45,11 +45,11 @@
         <form id="detailForm">
           <div class="form-group">
             <label>วันที่รับอุปกรณ์ (Start Date) *</label>
-            <input type="date" id="start_date" required />
+            <input type="date" id="rd_start_date" required />
           </div>
           <div class="form-group">
             <label>วันที่คืนอุปกรณ์ (End Date) *</label>
-            <input type="date" id="end_date" required />
+            <input type="date" id="rd_end_date" required />
           </div>
           <button
             type="submit"
@@ -76,7 +76,7 @@
       if (cartData.length > 0) {
         let html = "<ul style='padding-left: 20px; margin: 0;'>";
         cartData.forEach((item) => {
-          html += `<li style='margin-bottom: 5px;'>${item.brand} ${item.model} (ID: ${item.equipment_id})</li>`;
+          html += `<li style='margin-bottom: 5px;'>${item.equip_brand} ${item.equip_model} (ID: ${item.equip_id})</li>`;
         });
         html += "</ul>";
         summaryDiv.innerHTML = html;
@@ -85,14 +85,14 @@
           "<p style='color:red;'>ไม่พบข้อมูลสินค้าในตะกร้า</p>";
       }
 
-      document.getElementById("start_date").valueAsDate = new Date();
+      document.getElementById("rd_start_date").valueAsDate = new Date();
 
       document
         .getElementById("detailForm")
         .addEventListener("submit", async function (e) {
           e.preventDefault();
-          const startDate = document.getElementById("start_date").value;
-          const endDate = document.getElementById("end_date").value;
+          const startDate = document.getElementById("rd_start_date").value;
+          const endDate = document.getElementById("rd_end_date").value;
 
           try {
             // ยิง API วนลูปตามจำนวนของในตะกร้า
@@ -102,15 +102,15 @@
                 "65690" + Math.floor(1000 + Math.random() * 9000); // จำลอง ID
 
               const detailPayload = {
-                rentaldetail_id: detailId,
-                start_date: startDate,
-                end_date: endDate,
+                rd_id: detailId,
+                rd_start_date: startDate,
+                rd_end_date: endDate,
                 rental_id: rentalId,
-                equipment_id: item.equipment_id,
+                equip_id: item.equip_id,
               };
 
               const response = await fetch(
-                "http://127.0.0.1:3000/add-rental-detail",
+                "http://127.0.0.1:3000/add-Rentals-detail",
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -125,7 +125,7 @@
             }
 
             alert("บันทึกรายการอุปกรณ์ทั้งหมดสำเร็จ! ไปหน้าชำระเงินกันเลย");
-            window.location.href = "payment.html";
+            window.location.href = "Payments.html";
           } catch (error) {
             alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
           }

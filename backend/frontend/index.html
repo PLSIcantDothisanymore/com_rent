@@ -41,9 +41,9 @@
     <header>
       <h1>PC Parts Rental</h1>
       <div class="header-actions">
-        <div id="auth-status"></div>
+        <div id="auth-equip_status"></div>
 
-        <div id="cart-status">
+        <div id="cart-equip_status">
           🛒 ตะกร้า:
           <span id="cart-count" style="font-weight: bold">0</span> ชิ้น
           <button class="btn-primary" onclick="showCartModal()">
@@ -110,7 +110,7 @@
     <div id="toast"></div>
 
     <script>
-      const EQUIPMENT_API = "http://127.0.0.1:3000/all-equipment";
+      const EQUIPMENT_API = "http://127.0.0.1:3000/all-Equipments";
       let cart = [];
       let allProducts = [];
       let activeCategory = "all";
@@ -129,12 +129,12 @@
       // 🟢 1. ตรวจสอบสถานะการ Login ทันทีที่โหลดหน้า
       function checkLoginStatus() {
         const userId = localStorage.getItem("user_id");
-        const authDiv = document.getElementById("auth-status");
+        const authDiv = document.getElementById("auth-equip_status");
 
         if (userId) {
           // ถ้าล็อคอินแล้ว ให้แสดงปุ่มแก้โปรไฟล์และออกจากระบบ
           authDiv.innerHTML = `
-                    <button class="btn-secondary" onclick="window.location.href='customer.html'">แก้ไขข้อมูลส่วนตัว</button>
+                    <button class="btn-secondary" onclick="window.location.href='Customer.html'">แก้ไขข้อมูลส่วนตัว</button>
                     <button class="btn-danger" onclick="logout()">ออกจากระบบ</button>
                 `;
         } else {
@@ -148,7 +148,7 @@
       // 🟢 2. ฟังก์ชันออกจากระบบ
       function logout() {
         localStorage.removeItem("user_id");
-        localStorage.removeItem("customer_id");
+        localStorage.removeItem("cust_id");
         alert("ออกจากระบบเรียบร้อยแล้ว");
         window.location.reload();
       }
@@ -172,7 +172,7 @@
         ];
         bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory('all', this)">ทั้งหมด</button>`;
         usedIds.forEach((id) => {
-          const name = CATEGORY_MAP[id] || "category " + id;
+          const name = CATEGORY_MAP[id] || "Categories " + id;
           bar.innerHTML += `<button class="filter-btn" onclick="filterCategory(${id}, this)">${name}</button>`;
         });
       }
@@ -195,10 +195,10 @@
           const card = document.createElement("div");
           card.className = "product-card";
           const categoryName = product.category_name || "ทั่วไป";
-          const brand = product.brand || "No Brand";
-          const model = product.model || "";
-          const dailyRate = product.daily_rate || 0;
-          const equipmentId = product.equipment_id;
+          const equip_brand = product.equip_brand || "No Brand";
+          const equip_model = product.equip_model || "";
+          const dailyRate = product.equip_rate || 0;
+          const equipmentId = product.equip_id;
           const displayCategory =
             CATEGORY_MAP[product.category_id] ||
             product.category_name ||
@@ -206,7 +206,7 @@
           card.innerHTML = `
                     <div>
                         <div class="product-category">${displayCategory}</div>
-                        <h3 class="product-name">${brand} ${model}</h3>
+                        <h3 class="product-name">${equip_brand} ${equip_model}</h3>
                     </div>
                     <div>
                         <div class="product-price">฿${Number(dailyRate).toLocaleString()} / วัน</div>
@@ -219,19 +219,25 @@
 
       // --- ระบบตะกร้า ---
       function addToCart(equipmentId) {
-        const product = allProducts.find((p) => p.equipment_id == equipmentId);
-        const exists = cart.find((item) => item.equipment_id == equipmentId);
+        const product = allProducts.find((p) => p.equip_id == equipmentId);
+        const exists = cart.find((item) => item.equip_id == equipmentId);
         if (exists) {
           showToast("อุปกรณ์ชิ้นนี้อยู่ในตะกร้าแล้วครับ");
         } else {
           cart.push(product);
           updateCartUI();
-          showToast("เพิ่ม " + product.brand + " " + product.model + " แล้ว");
+          showToast(
+            "เพิ่ม " +
+              product.equip_brand +
+              " " +
+              product.equip_model +
+              " แล้ว",
+          );
         }
       }
 
       function removeFromCart(index) {
-        const name = cart[index].brand + " " + cart[index].model;
+        const name = cart[index].equip_brand + " " + cart[index].equip_model;
         cart.splice(index, 1);
         updateCartUI();
         renderCartItems();
@@ -278,8 +284,8 @@
             (item, i) => `
                 <div class="cart-item-row">
                     <div class="cart-item-info">
-                        <div class="cart-item-name">${item.brand} ${item.model}</div>
-                        <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || "ทั่วไป"} · ฿${Number(item.daily_rate).toLocaleString()}/วัน</div>
+                        <div class="cart-item-name">${item.equip_brand} ${item.equip_model}</div>
+                        <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || "ทั่วไป"} · ฿${Number(item.equip_rate).toLocaleString()}/วัน</div>
                     </div>
                     <button class="delete-btn" onclick="removeFromCart(${i})" title="ลบ">🗑</button>
                 </div>
@@ -318,7 +324,7 @@
 
         // 3.2 บันทึกข้อมูลตะกร้าลง LocalStorage
         let totalAmount = 0;
-        cart.forEach((item) => (totalAmount += Number(item.daily_rate)));
+        cart.forEach((item) => (totalAmount += Number(item.equip_rate)));
         localStorage.setItem("cartTotalAmount", totalAmount);
         localStorage.setItem("cartData", JSON.stringify(cart));
 
@@ -329,20 +335,20 @@
         try {
           // เปลี่ยน IP เป็น localhost ให้ตรงกันเพื่อป้องกันปัญหา
           const res = await fetch(
-            `http://localhost:3000/check-customer/${userId}`,
+            `http://localhost:3000/check-Customer/${userId}`,
           );
           const data = await res.json();
 
           // 🟢 แก้ให้ตรงกับหลังบ้าน (ใช้ data.exists แทน data.hasProfile)
           if (data.exists === true) {
-            // ถ้ามีประวัติแล้ว ให้จำ customer_id ไว้ แล้วข้ามไปหน้าเช่าหลัก
-            localStorage.setItem("customer_id", data.customer.customer_id);
+            // ถ้ามีประวัติแล้ว ให้จำ cust_id ไว้ แล้วข้ามไปหน้าเช่าหลัก
+            localStorage.setItem("cust_id", data.Customer.cust_id);
             console.log("พบประวัติลูกค้า ไปหน้าเช่าต่อได้เลย");
-            window.location.href = "rental.html"; // เปลี่ยนชื่อไฟล์ตรงนี้ให้ตรงกับหน้าเช่าของคุณนะครับ
+            window.location.href = "Rentals.html"; // เปลี่ยนชื่อไฟล์ตรงนี้ให้ตรงกับหน้าเช่าของคุณนะครับ
           } else {
-            // ถ้ายังไม่เคยกรอกชื่อ-เบอร์โทร ให้ไปหน้า customer.html
+            // ถ้ายังไม่เคยกรอกชื่อ-เบอร์โทร ให้ไปหน้า Customer.html
             alert("กรุณากรอกข้อมูลส่วนตัวครั้งแรกก่อนเริ่มทำการเช่า");
-            window.location.href = "customer.html";
+            window.location.href = "Customer.html";
           }
         } catch (error) {
           console.error("ตรวจสอบข้อมูลลูกค้าล้มเหลว", error);

@@ -22,14 +22,14 @@ header {
 
 h1 { margin: 0; font-size: 24px; color: #111; }
 
-#cart-status {
+#cart-equip_status {
     padding: 10px 20px;
     background: #f8f9fa;
     border-radius: 50px;
     border: 1px solid #ddd;
 }
 
-#cart-status button {
+#cart-equip_status button {
     background: #000;
     color: #fff;
     border: none;
@@ -40,7 +40,7 @@ h1 { margin: 0; font-size: 24px; color: #111; }
     font-size: 13px;
 }
 
-#cart-status button:hover { background: #333; }
+#cart-equip_status button:hover { background: #333; }
 
 .container { padding: 40px 50px; max-width: 1200px; margin: 0 auto; }
 h2 { font-weight: 500; margin-bottom: 30px; }

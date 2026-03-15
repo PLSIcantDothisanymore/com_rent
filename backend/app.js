@@ -54,7 +54,7 @@ app.post('/login', async (req, res) => {
 
 // ตรวจสอบว่า User นี้เคยกรอกข้อมูลลูกค้าหรือยัง
 // ถ้าเคยกรอกแล้ว → ส่งข้อมูลเดิมกลับไปให้หน้าเว็บ pre-fill ในฟอร์มทันที
-app.get('/check-customer/:id', async (req, res) => {
+app.get('/check-Customer/:id', async (req, res) => {
     const userId = req.params.id;
     try {
         const sql = "SELECT * FROM customer WHERE user_id = ?";
@@ -64,7 +64,7 @@ app.get('/check-customer/:id', async (req, res) => {
         if (rows && rows.length > 0) {
             return res.status(200).json({ 
                 exists: true, 
-                customer: rows[0]
+                Customer: rows[0]
             });
         } else {
             return res.status(200).json({ exists: false });
@@ -78,10 +78,10 @@ app.get('/check-customer/:id', async (req, res) => {
 // บันทึก/อัปเดตข้อมูลลูกค้า
 // ถ้า User_id นี้มีข้อมูลอยู่แล้ว → UPDATE แทนที่ข้อมูลเดิม
 // ถ้ายังไม่มี → INSERT ใหม่
-app.post('/save-customer', async (req, res) => {
-    const { customer_id, full_name, phone, user_id } = req.body;
+app.post('/save-Customer', async (req, res) => {
+    const { cust_id, cust_name, cust_phone, user_id } = req.body;
 
-    if (!full_name || !phone || !user_id) {
+    if (!cust_name || !cust_phone || !user_id) {
         return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
 
@@ -92,13 +92,13 @@ app.post('/save-customer', async (req, res) => {
 
         if (rows && rows.length > 0) {
             // มีอยู่แล้ว → UPDATE
-            const updateSql = `UPDATE customer SET full_name = ?, phone = ? WHERE user_id = ?`;
-            await pool.query(updateSql, [full_name, phone, user_id]);
+            const updateSql = `UPDATE customer SET cust_name = ?, cust_phone = ? WHERE user_id = ?`;
+            await pool.query(updateSql, [cust_name, cust_phone, user_id]);
             return res.status(200).json({ message: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
         } else {
             // ยังไม่มี → INSERT
-            const insertSql = `INSERT INTO customer (customer_id, full_name, phone, user_id) VALUES (?, ?, ?, ?)`;
-            await pool.query(insertSql, [customer_id, full_name, phone, user_id]);
+            const insertSql = `INSERT INTO customer (cust_id, cust_name, cust_phone, user_id) VALUES (?, ?, ?, ?)`;
+            await pool.query(insertSql, [cust_id, cust_name, cust_phone, user_id]);
             return res.status(200).json({ message: "บันทึกข้อมูลลูกค้าสำเร็จ" });
         }
 
@@ -108,7 +108,7 @@ app.post('/save-customer', async (req, res) => {
     }
 });
 
-app.get("/all-customer", async (req, res) => {
+app.get("/all-Customer", async (req, res) => {
     try {
         const [rows] = await pool.query("SELECT * FROM customer");
         return res.json(rows);
@@ -121,7 +121,7 @@ app.get("/all-customer", async (req, res) => {
 // ส่วนที่ 3: ดึงข้อมูลสินค้าและหมวดหมู่
 // ==========================================
 
-app.get("/all-category", async (req, res) => {
+app.get("/all-Categories", async (req, res) => {
     try {
         const rows = await pool.query("SELECT * FROM category");
         return res.json(rows);
@@ -130,7 +130,7 @@ app.get("/all-category", async (req, res) => {
     }
 });
 
-app.get("/all-equipment", async (req, res) => {
+app.get("/all-Equipments", async (req, res) => {
     try {
         const rows = await pool.query("SELECT * FROM equipment");
         return res.json(rows);
@@ -139,9 +139,9 @@ app.get("/all-equipment", async (req, res) => {
     }
 });
 
-app.get("/equipment/:id", async (req, res) => {
+app.get("/Equipments/:id", async (req, res) => {
     try {
-        const [rows] = await pool.query("SELECT * FROM equipment WHERE equipment_id = ?", [req.params.id]);
+        const [rows] = await pool.query("SELECT * FROM equipment WHERE equip_id = ?", [req.params.id]);
         if (rows.length > 0) return res.json(rows[0]);
         return res.status(404).json({ message: "ไม่พบสินค้านี้" });
     } catch (error) {
@@ -153,12 +153,12 @@ app.get("/equipment/:id", async (req, res) => {
 // ส่วนที่ 4: ระบบเช่าและชำระเงิน
 // ==========================================
 
-app.post("/add-rental", async (req, res) => {
-    const { rental_id, order_date, total_amount, total_deposit, payment_status, customer_id } = req.body;
+app.post("/add-Rentals", async (req, res) => {
+    const { rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id } = req.body;
     try {
-        const sql = `INSERT INTO rental (rental_id, order_date, total_amount, total_deposit, payment_status, customer_id) 
+        const sql = `INSERT INTO rental (rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id) 
                      VALUES (?, ?, ?, ?, ?, ?)`;
-        await pool.query(sql, [rental_id, order_date, total_amount, total_deposit, payment_status, customer_id]);
+        await pool.query(sql, [rental_id, rental_order_date, rental_total_amount, rental_total_deposit, rental_payment_status, cust_id]);
         return res.status(200).json({ message: "สร้างใบสั่งเช่าสำเร็จ!", rental_id: rental_id });
     } catch (error) {
         console.error("Add Rental Error:", error);
@@ -166,12 +166,12 @@ app.post("/add-rental", async (req, res) => {
     }
 });
 
-app.post("/add-rental-detail", async (req, res) => {
-    const { rentaldetail_id, start_date, end_date, rental_id, equipment_id } = req.body;
+app.post("/add-Rentals-detail", async (req, res) => {
+    const { rd_id, rd_start_date, rd_end_date, rental_id, equip_id } = req.body;
     try {
-        const sql = `INSERT INTO rental_detail (rentaldetail_id, start_date, end_date, rental_id, equipment_id) 
+        const sql = `INSERT INTO rental_detail (rd_id, rd_start_date, rd_end_date, rental_id, equip_id) 
                      VALUES (?, ?, ?, ?, ?)`;
-        await pool.query(sql, [rentaldetail_id, start_date, end_date, rental_id, equipment_id]);
+        await pool.query(sql, [rd_id, rd_start_date, rd_end_date, rental_id, equip_id]);
         return res.status(200).json({ message: "บันทึกรายละเอียดการเช่าสำเร็จ!" });
     } catch (error) {
         console.error("Add Rental Detail Error:", error);
@@ -179,7 +179,7 @@ app.post("/add-rental-detail", async (req, res) => {
     }
 });
 
-app.post("/add-payment", async (req, res) => {
+app.post("/add-Payments", async (req, res) => {
     const { payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id } = req.body;
     try {
         const sql = `INSERT INTO payment (payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id) 
@@ -209,7 +209,7 @@ app.use((req, res) => {
 //post => add data(body)
 //put => edit data(body)
 //delete => delete data(query,params)
-app.get("/all-category", async (req, res) => {
+app.get("/all-Categories", async (req, res) => {
     try {
         // Grab the whole list of rows
         const rows = await pool.query("SELECT * FROM category");
@@ -223,10 +223,10 @@ app.get("/all-category", async (req, res) => {
     }
 });
 
-app.get("/all-customer", async (req, res) => {
+app.get("/all-Customer", async (req, res) => {
     try {
         // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM customer");
+        const rows = await pool.query("SELECT * FROM Customer");
         
         // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
         return res.json(rows);
@@ -243,10 +243,10 @@ app.get("/all-customer", async (req, res) => {
     }
 });
 
-app.get("/all-equipment", async (req, res) => {
+app.get("/all-Equipments", async (req, res) => {
     try {
         // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM equipment");
+        const rows = await pool.query("SELECT * FROM Equipments");
         
         // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
         return res.json(rows);
@@ -263,10 +263,10 @@ app.get("/all-equipment", async (req, res) => {
     }
 });
 
-app.get("/all-payment", async (req, res) => {
+app.get("/all-Payments", async (req, res) => {
     try {
         // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM payment");
+        const rows = await pool.query("SELECT * FROM Payments");
         
         // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
         return res.json(rows);
@@ -283,10 +283,10 @@ app.get("/all-payment", async (req, res) => {
     }
 });
 
-app.get("/all-rental", async (req, res) => {
+app.get("/all-Rentals", async (req, res) => {
     try {
         // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM rental");
+        const rows = await pool.query("SELECT * FROM Rentals");
         
         // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
         return res.json(rows);
@@ -304,10 +304,10 @@ app.get("/all-rental", async (req, res) => {
 });
 
 
-app.get("/all-rental_detail", async (req, res) => {
+app.get("/all-Rental_details", async (req, res) => {
     try {
         // ดึงมาเฉพาะข้อมูล (rows) เพื่อไม่ให้ข้อมูลขยะติดมาด้วย
-        const rows = await pool.query("SELECT * FROM rental_detail");
+        const rows = await pool.query("SELECT * FROM Rental_details");
         
         // ถ้าสำเร็จ ให้ส่งข้อมูลกลับไป
         return res.json(rows);
@@ -324,12 +324,12 @@ app.get("/all-rental_detail", async (req, res) => {
     }
 });
 
-app.post("/add-category",async(req,res) =>{
+app.post("/add-Categories",async(req,res) =>{
     try {
         const {category_id,category_name} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO category (category_id,category_name)
+            `INSERT INTO Categories (category_id,category_name)
             VALUE(?,?)
             `,[category_id,category_name]
         )
@@ -344,14 +344,14 @@ app.post("/add-category",async(req,res) =>{
     }
 });
 
-app.post("/add-customer",async(req,res) =>{
+app.post("/add-Customer",async(req,res) =>{
     try {
-        const {customer_id,full_name,phone,identity_proof} = req.body;
+        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO customer (customer_id,full_name,phone,identity_proof)
+            `INSERT INTO Customer (cust_id,cust_name,cust_phone,identity_proof)
             VALUE(?,?,?,?)
-            `,[customer_id,full_name,phone,identity_proof]
+            `,[cust_id,cust_name,cust_phone,identity_proof]
         )
 
         if(insertedresult?.affectedRows === 0){
@@ -364,14 +364,14 @@ app.post("/add-customer",async(req,res) =>{
     }
 });
 
-app.post("/add-equipment",async(req,res) =>{
+app.post("/add-Equipments",async(req,res) =>{
     try {
-        const {equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
+        const {equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO equipment (equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id)
+            `INSERT INTO Equipments (equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id)
             VALUES(?,?,?,?,?,?,?,?,?)
-            `,[equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id]
+            `,[equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id]
         )
 
         if(insertedresult?.affectedRows === 0){
@@ -384,12 +384,12 @@ app.post("/add-equipment",async(req,res) =>{
     }
 });
 
-app.post("/add-payment",async(req,res) =>{
+app.post("/add-Payments",async(req,res) =>{
     try {
         const {payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO payment (payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id)
+            `INSERT INTO Payments (payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id)
             VALUE(?,?,?,?,?,?)
             `,[payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id]
         )
@@ -404,15 +404,24 @@ app.post("/add-payment",async(req,res) =>{
     }
 });
 
-app.post("/add-rental",async(req,res) =>{
+app.post("/add-Rentals",async(req,res) =>{
     try {
-        const {rental_id,order_date,total_amount,total_deposit,payment_status,customer_id} = req.body;
+        const {rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO rental (rental_id,order_date,total_amount,total_deposit,payment_status,customer_id)
+            `INSERT INTO Rentals (rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id)
             VALUE(?,?,?,?,?,?)
-            `,[rental_id,order_date,total_amount,total_deposit,payment_status,customer_id]
+            `,[rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id]
         )
+        db.query(sql, [values], (err, dbResult) => {
+        if (err) return res.status(500).json({ errorDetail: err.message });
+        
+        // ส่ง ID ที่เพิ่งถูก Auto-increment กลับไปให้ Frontend
+        res.status(200).json({ 
+            message: "Success", 
+            rental_id: dbResult.insertId // dbResult.insertId คือ ID ล่าสุดที่เพิ่งถูกสร้าง
+        }); 
+    }); 
 
         if(insertedresult?.affectedRows === 0){
             throw new Error("insert error");
@@ -424,14 +433,14 @@ app.post("/add-rental",async(req,res) =>{
     }
 });
 
-app.post("/add-rental_detail",async(req,res) =>{
+app.post("/add-Rental_details",async(req,res) =>{
     try {
-        const {rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id} = req.body;
+        const {rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id} = req.body;
 
         const insertedresult = await pool.query(
-            `INSERT INTO rental_detail (rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id)
+            `INSERT INTO Rental_details (rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id)
             VALUE(?,?,?,?,?,?,?,?)
-            `,[rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id]
+            `,[rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id]
         )
 
         if(insertedresult?.affectedRows === 0){
@@ -444,12 +453,12 @@ app.post("/add-rental_detail",async(req,res) =>{
     }
 });
 
-app.put("/edit-category",async(req,res)=>{
+app.put("/edit-Categories",async(req,res)=>{
     try {
         const {category_id,category_name} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE category SET category_name = ?
+            `UPDATE Categories SET category_name = ?
             WHERE category_id = ?
             `,[category_name,category_id]
         )
@@ -463,14 +472,14 @@ app.put("/edit-category",async(req,res)=>{
     }
 })
 
-app.put("/edit-customer",async(req,res)=>{
+app.put("/edit-Customer",async(req,res)=>{
     try {
-        const {customer_id,full_name,phone,identity_proof} = req.body;
+        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE customer SET full_name = ?,phone = ?,identity_proof = ?
-            WHERE customer_id = ?
-            `,[full_name,phone,identity_proof,customer_id]
+            `UPDATE Customer SET cust_name = ?,cust_phone = ?,identity_proof = ?
+            WHERE cust_id = ?
+            `,[cust_name,cust_phone,identity_proof,cust_id]
         )
         if(updateResult?.affectedRows === 0){
             throw new Error("update error");
@@ -482,14 +491,14 @@ app.put("/edit-customer",async(req,res)=>{
     }
 })
 
-app.put("/edit-customer",async(req,res)=>{
+app.put("/edit-Customer",async(req,res)=>{
     try {
-        const {customer_id,full_name,phone,identity_proof} = req.body;
+        const {cust_id,cust_name,cust_phone,identity_proof} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE customer SET full_name = ?,phone = ?,identity_proof = ?
-            WHERE customer_id = ?
-            `,[full_name,phone,identity_proof,customer_id]
+            `UPDATE Customer SET cust_name = ?,cust_phone = ?,identity_proof = ?
+            WHERE cust_id = ?
+            `,[cust_name,cust_phone,identity_proof,cust_id]
         )
         if(updateResult?.affectedRows === 0){
             throw new Error("update error");
@@ -501,14 +510,14 @@ app.put("/edit-customer",async(req,res)=>{
     }
 })
 
-app.put("/edit-equipment",async(req,res)=>{
+app.put("/edit-Equipments",async(req,res)=>{
     try {
-        const {equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
+        const {equip_id,equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE equipment SET brand = ?,model = ?,Serial_number = ?,daily_rate = ?,deposit_fee = ?,equipment_status = ?,Condition_ = ?,category_id = ?
-            WHERE equipment_id = ?
-            `,[brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id,equipment_id]
+            `UPDATE Equipments SET equip_brand = ?,equip_model = ?,Serial_number = ?,equip_rate = ?,deposit_fee = ?,equipment_status = ?,Condition_ = ?,category_id = ?
+            WHERE equip_id = ?
+            `,[equip_brand,equip_model,Serial_number,equip_rate,deposit_fee,equipment_status,Condition_,category_id,equip_id]
         )
         if(updateResult?.affectedRows === 0){
             throw new Error("update error");
@@ -520,12 +529,12 @@ app.put("/edit-equipment",async(req,res)=>{
     }
 })
 
-app.put("/edit-payment",async(req,res)=>{
+app.put("/edit-Payments",async(req,res)=>{
     try {
         const {payment_id,payment_date,payment_amount,payment_method,payment_proof,rental_id} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE payment SET payment_date = ?,payment_amount = ?,payment_method = ?,payment_proof = ?,rental_id = ?
+            `UPDATE Payments SET payment_date = ?,payment_amount = ?,payment_method = ?,payment_proof = ?,rental_id = ?
             WHERE payment_id = ?
             `,[payment_date,payment_amount,payment_method,payment_proof,rental_id,payment_id]
         )
@@ -539,14 +548,14 @@ app.put("/edit-payment",async(req,res)=>{
     }
 })
 
-app.put("/edit-rental",async(req,res)=>{
+app.put("/edit-Rentals",async(req,res)=>{
     try {
-        const {rental_id,order_date,total_amount,total_deposit,payment_status,customer_id} = req.body;
+        const {rental_id,rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE rental SET order_date = ?,total_amount = ?,total_deposit = ?,payment_status = ?,customer_id = ?
+            `UPDATE Rentals SET rental_order_date = ?,rental_total_amount = ?,rental_total_deposit = ?,rental_payment_status = ?,cust_id = ?
             WHERE rental_id = ?
-            `,[order_date,total_amount,total_deposit,payment_status,customer_id,rental_id]
+            `,[rental_order_date,rental_total_amount,rental_total_deposit,rental_payment_status,cust_id,rental_id]
         )
         if(updateResult?.affectedRows === 0){
             throw new Error("update error");
@@ -558,14 +567,14 @@ app.put("/edit-rental",async(req,res)=>{
     }
 })
 
-app.put("/edit-rental_detail",async(req,res)=>{
+app.put("/edit-Rental_details",async(req,res)=>{
     try {
-        const {rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id} = req.body;
+        const {rd_id,rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id} = req.body;
 
         const updateResult = await pool.query(
-            `UPDATE rental_detail SET start_date = ?,end_date = ?,actual_return_date = ?,fine_amount = ?,condition_note = ?,rental_id =?,equipment_id =?
-            WHERE rentaldetail_id = ?
-            `,[start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id,rentaldetail_id]
+            `UPDATE Rental_details SET rd_start_date = ?,rd_end_date = ?,rd_actual_return_date = ?,rd_fine_amount = ?,rd_condition_note = ?,rental_id =?,equip_id =?
+            WHERE rd_id = ?
+            `,[rd_start_date,rd_end_date,rd_actual_return_date,rd_fine_amount,rd_condition_note,rental_id,equip_id,rd_id]
         )
         if(updateResult?.affectedRows === 0){
             throw new Error("update error");
@@ -577,14 +586,14 @@ app.put("/edit-rental_detail",async(req,res)=>{
     }
 })
 
-app.delete("/delete-category", async (req, res) => {
+app.delete("/delete-Categories", async (req, res) => {
     try {
         // Fix 1: Added { } to pull the exact string/number out of the object
         const { category_id } = req.query;
 
         // Fix 2: Added [ ] to get the database result, not the array!
         const deletetedResult = await pool.query(
-            `DELETE FROM category 
+            `DELETE FROM Categories 
              WHERE category_id = ?
             `, [category_id]
         )

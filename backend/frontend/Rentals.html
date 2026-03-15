@@ -50,7 +50,7 @@
             <label>รหัสลูกค้า (Customer ID) 🔒</label>
             <input
               type="text"
-              id="customer_id"
+              id="cust_id"
               class="readonly-input"
               readonly
               required
@@ -58,26 +58,31 @@
           </div>
           <div class="form-group">
             <label>วันที่สั่งเช่า (Order Date)</label>
-            <input type="date" id="order_date" required />
+            <input type="date" id="rental_order_date" required />
           </div>
           <div class="form-group">
             <label>ยอดรวมค่าเช่า (Total Amount)</label>
             <input
               type="number"
-              id="total_amount"
+              id="rental_total_amount"
               class="readonly-input"
               readonly
             />
           </div>
           <div class="form-group">
             <label>ค่ามัดจำ (Total Deposit)</label>
-            <input type="number" id="total_deposit" value="1000" required />
+            <input
+              type="number"
+              id="rental_total_deposit"
+              value="1000"
+              required
+            />
           </div>
           <div class="form-group">
             <label>สถานะการชำระเงิน (Payment Status)</label>
             <input
               type="text"
-              id="payment_status"
+              id="rental_payment_status"
               value="Pending"
               class="readonly-input"
               readonly
@@ -95,63 +100,52 @@
     </div>
 
     <script>
-      // 🟢 1. ตรวจสอบว่ามีรหัสลูกค้าในระบบหรือยัง
-      const customerId = localStorage.getItem("customer_id");
-      if (!customerId) {
-        alert(
-          "ไม่พบข้อมูลลูกค้า กรุณาเข้าสู่ระบบหรืออัปเดตข้อมูลส่วนตัวก่อนครับ",
-        );
-        window.location.href = "index.html";
-      } else {
-        // เอาคำมาใส่ในช่องให้อัตโนมัติ
-        document.getElementById("customer_id").value = customerId;
-      }
-
-      // 🟢 2. ดึงยอดรวมจากตะกร้ามาแสดง
-      const totalAmount = localStorage.getItem("cartTotalAmount") || 0;
-      document.getElementById("total_amount").value = totalAmount;
-
-      // 🟢 3. เซ็ตวันที่สั่งเช่าเป็นวันนี้อัตโนมัติ
-      document.getElementById("order_date").valueAsDate = new Date();
-
-      // 🟢 4. เมื่อกดปุ่ม "เปิดบิล"
       document
         .getElementById("rentalForm")
-        .addEventListener("submit", async function (e) {
+        .addEventListener("submit", async (e) => {
           e.preventDefault();
 
-          // จำลองสร้างรหัสการเช่า (เช่น 50100XXXXX) ให้ตรงกับฟอร์แมตใน Database
-          const generatedRentalId =
-            "50100" + Math.floor(10000 + Math.random() * 90000);
-
+          // 1. นำการสุ่ม ID ออก และไม่ส่ง rental_id ไปใน payload
           const rentalData = {
-            rental_id: generatedRentalId,
-            order_date: document.getElementById("order_date").value,
-            total_amount: document.getElementById("total_amount").value,
-            total_deposit: document.getElementById("total_deposit").value,
-            payment_status: document.getElementById("payment_status").value,
-            customer_id: document.getElementById("customer_id").value,
+            rental_order_date:
+              document.getElementById("rental_order_date").value,
+            rental_total_amount: document.getElementById("rental_total_amount")
+              .value,
+            rental_total_deposit: document.getElementById(
+              "rental_total_deposit",
+            ).value,
+            rental_payment_status: document.getElementById(
+              "rental_payment_status",
+            ).value,
+            cust_id: document.getElementById("cust_id").value,
           };
 
           try {
-            // ส่งข้อมูลไปที่ API
-            const response = await fetch("http://localhost:3000/add-rental", {
+            const response = await fetch("http://localhost:3000/add-Rentals", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(rentalData),
             });
 
-            if (response.ok) {
-              alert("บันทึกใบสั่งเช่าสำเร็จ! รหัส: " + generatedRentalId);
+            // 2. แปลง response เป็น JSON ทันที เพื่อดึง ID ที่ Backend สร้างให้
+            const result = await response.json();
 
-              // ฝากรหัสการเช่าไว้ให้หน้า detail ใช้ต่อ
-              localStorage.setItem("currentRentalId", generatedRentalId);
+            if (response.ok) {
+              // ⚠️ สำคัญ: เปลี่ยน result.rental_id เป็นชื่อ Key ที่ Backend ของคุณส่งกลับมา
+              // เช่น ถ้า Backend ส่ง res.json({ message: "Success", insertId: 5 }) ให้ใช้ result.insertId
+              const newRentalId = result.rental_id || result.insertId;
+
+              alert("บันทึกใบสั่งเช่าสำเร็จ! รหัส: " + newRentalId);
+
+              // ฝากรหัสการเช่า (ที่ได้จากฐานข้อมูล) ไว้ให้หน้า detail ใช้ต่อ
+              localStorage.setItem("currentRentalId", newRentalId);
 
               // เด้งไปหน้าระบุวันเช่า
               window.location.href = "detail.html";
             } else {
-              const result = await response.json();
-              alert("เกิดข้อผิดพลาด: " + result.errorDetail);
+              alert(
+                "เกิดข้อผิดพลาด: " + (result.errorDetail || result.message),
+              );
             }
           } catch (error) {
             alert(
