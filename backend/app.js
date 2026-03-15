@@ -110,7 +110,7 @@ app.post('/login', async (req, res) => {
             message: 'เข้าสู่ระบบสำเร็จ',
             user: {
                 // 💡 3. เปลี่ยนชื่อคอลัมน์ให้เป็นตัวเล็กทั้งหมด
-                id: user.user_id,         
+                id: user.user_id,        
                 username: user.username,  
                 role: user.role           
             }
@@ -464,7 +464,7 @@ app.post("/add-rental",async(req,res) =>{
     }
 });
 
-app.post("/add-rental_detail",async(req,res) =>{
+app.post("/add-rental-detail",async(req,res) =>{
     try {
         const {rentaldetail_id,start_date,end_date,actual_return_date,fine_amount,condition_note,rental_id,equipment_id} = req.body;
 
@@ -638,6 +638,8 @@ app.delete("/delete-category", async (req, res) => {
         return res.status(500).send({ message: error.message });
     }
 });
+
+
 
 const PORT = process.env.PORT || 3000
 app.listen(PORT,()=>{
