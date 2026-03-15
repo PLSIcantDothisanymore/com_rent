@@ -72,7 +72,7 @@
           const data = await res.json();
 
           if (res.ok) {
-            localStorage.setItem("user_id", data.user.User_id);
+            localStorage.setItem("user_id", data.user.user_id);
             alert("เข้าสู่ระบบสำเร็จ!");
             window.location.href = "index.html";
           } else {

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>สมัครสมาชิก - PC Parts Rental</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div
+      class="container"
+      style="max-width: 400px; margin-top: 50px; text-align: center"
+    >
+      <div class="product-card" style="padding: 30px">
+        <h2>สมัครสมาชิก</h2>
+        <form id="registerForm" style="text-align: left">
+          <div style="margin-bottom: 15px">
+            <label>Username</label>
+            <input
+              type="text"
+              id="reg_username"
+              style="
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              "
+              required
+            />
+          </div>
+          <div style="margin-bottom: 20px">
+            <label>Password</label>
+            <input
+              type="password"
+              id="reg_password"
+              style="
+                width: 100%;
+                padding: 8px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              "
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            style="
+              width: 100%;
+              padding: 10px;
+              background: #28a745;
+              color: white;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 16px;
+            "
+          >
+            ยืนยันการสมัคร
+          </button>
+        </form>
+        <p style="margin-top: 15px">
+          มีบัญชีอยู่แล้ว?
+          <a href="login.html" style="color: #007bff; text-decoration: none"
+            >กลับไปหน้าล็อกอิน</a
+          >
+        </p>
+      </div>
+    </div>
+
+    <script>
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const username = document.getElementById("reg_username").value;
+          const password = document.getElementById("reg_password").value;
+
+          // สุ่ม user_id ขึ้นมาใหม่ (เช่น U123456) เพื่อเอาไปเก็บเป็น Primary Key ในตาราง login
+          // ของใหม่ (สุ่มเป็นตัวเลข 8 หลักล้วนๆ)
+          const userId = Math.floor(10000000 + Math.random() * 90000000);
+
+          try {
+            // ส่งข้อมูลไปที่ API /register (ที่เราเขียนไว้ใน app.js)
+            const res = await fetch("http://localhost:3000/register", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                user_id: userId,
+                username: username,
+                password: password,
+              }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+              alert("สมัครสมาชิกสำเร็จ! กรุณาล็อกอินด้วยรหัสที่คุณเพิ่งสร้าง");
+              window.location.href = "login.html"; // สมัครเสร็จเด้งไปหน้าล็อกอิน
+            } else {
+              alert(
+                "เกิดข้อผิดพลาด: " +
+                  data.message +
+                  "\n(อาจจะมีชื่อ Username นี้ในระบบแล้ว)",
+              );
+            }
+          } catch (error) {
+            alert(
+              "ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบว่า Backend (node app.js) ทำงานอยู่หรือไม่",
+            );
+          }
+        });
+    </script>
+  </body>
+</html>

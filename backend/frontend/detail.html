@@ -1,105 +1,135 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ระบุวันเช่าอุปกรณ์ - PC Parts Rental</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <style>
-        .form-group { margin-bottom: 20px; text-align: left; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .item-list { background: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
+      .form-group {
+        margin-bottom: 20px;
+        text-align: left;
+      }
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+      .item-list {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: left;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <header>
-        <h1>PC Parts Rental - ระบุวันที่ต้องการเช่า</h1>
+      <h1>PC Parts Rental - ระบุวันที่ต้องการเช่า</h1>
     </header>
 
-    <div class="container" style="max-width: 500px; margin-top: 40px;">
-        <div class="product-card" style="padding: 30px;">
-            <h2>เลือกระยะเวลาเช่า</h2>
-            
-            <div class="item-list" id="cart-summary">
-                </div>
+    <div class="container" style="max-width: 500px; margin-top: 40px">
+      <div class="product-card" style="padding: 30px">
+        <h2>เลือกระยะเวลาเช่า</h2>
 
-            <form id="detailForm">
-                <div class="form-group">
-                    <label>วันที่รับอุปกรณ์ (Start Date) *</label>
-                    <input type="date" id="start_date" required>
-                </div>
-                <div class="form-group">
-                    <label>วันที่คืนอุปกรณ์ (End Date) *</label>
-                    <input type="date" id="end_date" required>
-                </div>
-                <button type="submit" class="rent-btn" style="background-color: #28a745;">บันทึกรายการ & ไปชำระเงิน ➔</button>
-            </form>
-        </div>
+        <div class="item-list" id="cart-summary"></div>
+
+        <form id="detailForm">
+          <div class="form-group">
+            <label>วันที่รับอุปกรณ์ (Start Date) *</label>
+            <input type="date" id="start_date" required />
+          </div>
+          <div class="form-group">
+            <label>วันที่คืนอุปกรณ์ (End Date) *</label>
+            <input type="date" id="end_date" required />
+          </div>
+          <button
+            type="submit"
+            class="rent-btn"
+            style="background-color: #28a745"
+          >
+            บันทึกรายการ & ไปชำระเงิน ➔
+          </button>
+        </form>
+      </div>
     </div>
 
     <script>
-        const cartData = JSON.parse(localStorage.getItem('cartData')) || [];
-        const rentalId = localStorage.getItem('currentRentalId');
+      const cartData = JSON.parse(localStorage.getItem("cartData")) || [];
+      const rentalId = localStorage.getItem("currentRentalId");
 
-        if(!rentalId) {
-            alert("ไม่พบข้อมูลบิลเช่าหลัก กรุณาทำรายการใหม่");
-            window.location.href = "index.html";
-        }
+      if (!rentalId) {
+        alert("ไม่พบข้อมูลบิลเช่าหลัก กรุณาทำรายการใหม่");
+        window.location.href = "index.html";
+      }
 
-        // แสดงรายการในตะกร้า
-        const summaryDiv = document.getElementById('cart-summary');
-        if(cartData.length > 0) {
-            let html = "<ul style='padding-left: 20px; margin: 0;'>";
-            cartData.forEach(item => {
-                html += `<li style='margin-bottom: 5px;'>${item.brand} ${item.model} (ID: ${item.equipment_id})</li>`;
-            });
-            html += "</ul>";
-            summaryDiv.innerHTML = html;
-        } else {
-            summaryDiv.innerHTML = "<p style='color:red;'>ไม่พบข้อมูลสินค้าในตะกร้า</p>";
-        }
+      // แสดงรายการในตะกร้า
+      const summaryDiv = document.getElementById("cart-summary");
+      if (cartData.length > 0) {
+        let html = "<ul style='padding-left: 20px; margin: 0;'>";
+        cartData.forEach((item) => {
+          html += `<li style='margin-bottom: 5px;'>${item.brand} ${item.model} (ID: ${item.equipment_id})</li>`;
+        });
+        html += "</ul>";
+        summaryDiv.innerHTML = html;
+      } else {
+        summaryDiv.innerHTML =
+          "<p style='color:red;'>ไม่พบข้อมูลสินค้าในตะกร้า</p>";
+      }
 
-        document.getElementById('start_date').valueAsDate = new Date();
+      document.getElementById("start_date").valueAsDate = new Date();
 
-        document.getElementById('detailForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const startDate = document.getElementById('start_date').value;
-            const endDate = document.getElementById('end_date').value;
+      document
+        .getElementById("detailForm")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const startDate = document.getElementById("start_date").value;
+          const endDate = document.getElementById("end_date").value;
 
-            try {
-                // ยิง API วนลูปตามจำนวนของในตะกร้า
-                for (let i = 0; i < cartData.length; i++) {
-                    const item = cartData[i];
-                    const detailId = "65690" + Math.floor(1000 + Math.random() * 9000); // จำลอง ID
+          try {
+            // ยิง API วนลูปตามจำนวนของในตะกร้า
+            for (let i = 0; i < cartData.length; i++) {
+              const item = cartData[i];
+              const detailId =
+                "65690" + Math.floor(1000 + Math.random() * 9000); // จำลอง ID
 
-                    const detailPayload = {
-                        rentaldetail_id: detailId,
-                        start_date: startDate,
-                        end_date: endDate,
-                        rental_id: rentalId,
-                        equipment_id: item.equipment_id
-                    };
+              const detailPayload = {
+                rentaldetail_id: detailId,
+                start_date: startDate,
+                end_date: endDate,
+                rental_id: rentalId,
+                equipment_id: item.equipment_id,
+              };
 
-                    const response = await fetch('http://127.0.0.1:3000/add-rental-detail', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(detailPayload)
-                    });
+              const response = await fetch(
+                "http://127.0.0.1:3000/add-rental-detail",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(detailPayload),
+                },
+              );
 
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw new Error(`ชิ้นที่ ${i+1} Error: ${err.errorDetail}`);
-                    }
-                }
-
-                alert("บันทึกรายการอุปกรณ์ทั้งหมดสำเร็จ! ไปหน้าชำระเงินกันเลย");
-                window.location.href = "payment.html";
-
-            } catch (error) {
-                alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
+              if (!response.ok) {
+                const err = await response.json();
+                throw new Error(`ชิ้นที่ ${i + 1} Error: ${err.errorDetail}`);
+              }
             }
+
+            alert("บันทึกรายการอุปกรณ์ทั้งหมดสำเร็จ! ไปหน้าชำระเงินกันเลย");
+            window.location.href = "payment.html";
+          } catch (error) {
+            alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล: " + error.message);
+          }
         });
     </script>
-</body>
+  </body>
 </html>
