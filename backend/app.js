@@ -1,6 +1,8 @@
 import express from "express"
 import pool from "./connection.js"
 import cors from "cors"
+import bcrypt from "bcryptjs";
+
 
 const app  = express();
 app.use(cors());
@@ -11,6 +13,114 @@ app.get("/hello",(req,res) => {
     res.send("Hello World");
 });
 
+
+const dbConfig = {
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'railway' // เปลี่ยนเป็นชื่อฐานข้อมูลของคุณ
+};
+
+// ==========================================
+// 1. API สมัครสมาชิก (Register) - ฉบับสมบูรณ์
+// ==========================================
+app.post('/register', async (req, res) => {
+    const { email, password, name } = req.body;
+
+    // เช็คว่ากรอกข้อมูลครบไหม
+    if (!email || !password || !name) {
+        return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+    }
+
+    let connection; 
+    try {
+        connection = await pool.promise().getConnection(); 
+        await connection.beginTransaction();
+
+        // 1. เช็คว่ามีอีเมลนี้หรือยังในตาราง user
+        const [existingUsers] = await connection.execute('SELECT * FROM user WHERE Username = ?', [email]);
+        if (existingUsers.length > 0) {
+            await connection.rollback();
+            return res.status(400).json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' });
+        }
+
+        // 2. เข้ารหัสผ่าน
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // 3. บันทึกลงตาราง user
+        const [userResult] = await connection.execute(
+            'INSERT INTO user (Username, Password, Role) VALUES (?, ?, ?)',
+            [email, hashedPassword, 'customer']
+        );
+        // ดึง ID ของ user ที่เพิ่งสร้างมาเก็บไว้ในตัวแปร newUserId
+        const newUserId = userResult.insertId; 
+
+        // 4. สุ่มรหัสลูกค้า 10 หลัก สำหรับตาราง customer
+        const randomCustomerId = Math.floor(1000000000 + Math.random() * 9000000000);
+
+        // 5. บันทึกลงตาราง customer
+        await connection.execute(
+            'INSERT INTO customer (customer_id, User_ID, full_name) VALUES (?, ?, ?)',
+            [randomCustomerId, newUserId, name]
+        );
+
+        // สำเร็จ! บันทึกข้อมูลลงฐานข้อมูลจริงๆ
+        await connection.commit();
+        res.status(201).json({ message: 'สมัครสมาชิกสำเร็จ!' });
+
+    } catch (error) {
+        if (connection) await connection.rollback(); // ถ้ามี Error ให้ยกเลิกการบันทึกข้อมูล
+        console.error('Register Error:', error);
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' });
+    } finally {
+        if (connection) connection.release(); // คืนการเชื่อมต่อให้ระบบ
+    }
+});
+
+
+// ==========================================
+// 2. API เข้าสู่ระบบ (Login)
+// ==========================================
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'กรุณากรอกอีเมลและรหัสผ่าน' });
+    }
+
+    try {
+        // 💡 1. เปลี่ยนคอลัมน์ username เป็นตัวเล็ก
+        const [users] = await pool.promise().execute('SELECT * FROM user WHERE username = ?', [email]);
+        
+        if (users.length === 0) {
+            return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+        }
+
+        const user = users[0];
+
+        // 💡 2. เปลี่ยน user.Password เป็น user.password (ตัว p เล็ก)
+        const isMatch = await bcrypt.compare(password, user.password);
+        
+        if (!isMatch) {
+            return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+        }
+
+        res.json({
+            message: 'เข้าสู่ระบบสำเร็จ',
+            user: {
+                // 💡 3. เปลี่ยนชื่อคอลัมน์ให้เป็นตัวเล็กทั้งหมด
+                id: user.user_id,         
+                username: user.username,  
+                role: user.role           
+            }
+        });
+
+    } catch (error) {
+        console.error('Login Error:', error);
+        res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
+    }
+});
 
 //get => fecth data(query,params)
 //post => add data(body)
@@ -177,7 +287,7 @@ app.post("/add-equipment",async(req,res) =>{
 
         const insertedresult = await pool.query(
             `INSERT INTO equipment (equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id)
-            VALUE(?,?,?,?,?,?,?,?,?)
+            VALUES(?,?,?,?,?,?,?,?,?)
             `,[equipment_id,brand,model,Serial_number,daily_rate,deposit_fee,equipment_status,Condition_,category_id]
         )
 

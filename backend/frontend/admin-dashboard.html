@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f6f9;
+      }
+      .navbar {
+        background-color: #2c3e50;
+        color: white;
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .navbar h2 {
+        margin: 0;
+      }
+      .logout-btn {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+      .logout-btn:hover {
+        background-color: #c0392b;
+      }
+      .container {
+        padding: 20px;
+      }
+      .card {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar">
+      <h2>⚙️ ระบบจัดการแอดมิน (Admin Dashboard)</h2>
+      <div>
+        <span id="adminName" style="margin-right: 15px">กำลังโหลด...</span>
+        <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <h3>ยินดีต้อนรับสู่แผงควบคุม</h3>
+        <p>หน้านี้เฉพาะผู้ที่มีสิทธิ์ระดับ Admin เท่านั้นถึงจะมองเห็นได้</p>
+      </div>
+      <div class="card">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+          "
+        >
+          <h3>📦 จัดการอุปกรณ์ (Equipment)</h3>
+          <button
+            onclick="openModal()"
+            style="
+              background-color: #2ecc71;
+              color: white;
+              border: none;
+              padding: 10px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+            "
+          >
+            + เพิ่มอุปกรณ์ใหม่ (Insert)
+          </button>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; text-align: left">
+          <thead>
+            <tr style="background-color: #ecf0f1">
+              <th style="padding: 10px; border: 1px solid #ddd">ID</th>
+              <th style="padding: 10px; border: 1px solid #ddd">ชื่ออุปกรณ์</th>
+              <th style="padding: 10px; border: 1px solid #ddd">หมวดหมู่</th>
+              <th style="padding: 10px; border: 1px solid #ddd">ราคา/วัน</th>
+              <th
+                style="
+                  padding: 10px;
+                  border: 1px solid #ddd;
+                  text-align: center;
+                "
+              >
+                จัดการ
+              </th>
+            </tr>
+          </thead>
+          <tbody id="equipmentTableBody">
+            <tr>
+              <td
+                colspan="5"
+                style="
+                  padding: 10px;
+                  text-align: center;
+                  border: 1px solid #ddd;
+                "
+              >
+                กำลังโหลดข้อมูล...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div
+      id="addModal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      "
+    >
+      <div
+        style="
+          background: white;
+          width: 400px;
+          margin: 50px auto;
+          padding: 20px;
+          border-radius: 10px;
+        "
+      >
+        <h3>➕ เพิ่มอุปกรณ์ใหม่</h3>
+        <input
+          type="text"
+          id="new_brand"
+          placeholder="ยี่ห้อ (เช่น Intel, AMD)"
+          style="width: 90%; margin-bottom: 10px; padding: 8px"
+        />
+        <input
+          type="text"
+          id="new_model"
+          placeholder="ชื่อรุ่น"
+          style="width: 90%; margin-bottom: 10px; padding: 8px"
+        />
+        <input
+          type="number"
+          id="new_rate"
+          placeholder="ราคาเช่าต่อวัน"
+          style="width: 90%; margin-bottom: 10px; padding: 8px"
+        />
+        <input
+          type="text"
+          id="new_serial"
+          placeholder="Serial Number"
+          style="width: 90%; margin-bottom: 10px; padding: 8px"
+        />
+        <input
+          type="number"
+          id="new_cat"
+          placeholder="หมวดหมู่ (101-106)"
+          style="width: 90%; margin-bottom: 10px; padding: 8px"
+        />
+
+        <div style="text-align: right">
+          <button
+            onclick="closeModal()"
+            style="
+              background: #95a5a6;
+              color: white;
+              border: none;
+              padding: 8px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+            "
+          >
+            ยกเลิก
+          </button>
+          <button
+            onclick="saveEquipment()"
+            style="
+              background: #2ecc71;
+              color: white;
+              border: none;
+              padding: 8px 15px;
+              border-radius: 5px;
+              cursor: pointer;
+            "
+          >
+            บันทึก (Insert)
+          </button>
+        </div>
+      </div>
+    </div>
+    <script>
+      // 1. ตรวจสอบสิทธิ์ทันทีที่เปิดหน้านี้
+      window.onload = function () {
+        // ดึงข้อมูล user จาก localStorage (สมมติว่าตอน Login คุณบันทึกไว้แบบนี้)
+        const userStr = localStorage.getItem("user");
+
+        if (!userStr) {
+          // ถ้าไม่มีข้อมูลแปลว่ายังไม่ล็อกอิน เด้งกลับไปหน้า login
+          alert("กรุณาเข้าสู่ระบบก่อน!");
+          window.location.href = "/login.html"; // เปลี่ยนให้ตรงกับชื่อไฟล์หน้าล็อกอินของคุณ
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+
+        // เช็คว่าใช่ admin หรือไม่
+        if (user.role !== "admin") {
+          alert("คุณไม่มีสิทธิ์เข้าถึงหน้านี้!");
+          window.location.href = "/index.html"; // ถ้าไม่ใช่แอดมิน เด้งกลับไปหน้าแรก
+          return;
+        }
+
+        // ถ้าเป็นแอดมิน ให้แสดงชื่ออีเมลบนมุมขวา
+        document.getElementById("adminName").textContent =
+          "แอดมิน: " + user.username;
+      };
+
+      // 2. ฟังก์ชันออกจากระบบ
+      function logout() {
+        if (confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
+          localStorage.removeItem("user"); // ลบข้อมูลการล็อกอิน
+          window.location.href = "/index(1).html"; // เปลี่ยนให้ตรงกับชื่อไฟล์หน้าล็อกอินของคุณ
+        }
+      }
+      // ฟังก์ชันดึงข้อมูลอุปกรณ์จาก API มาแสดงในตาราง
+      async function loadEquipment() {
+        try {
+          // 💡 เรียก API ที่คุณเตรียมไว้ (localhost:3000/all-equipment)
+          const response = await fetch("http://localhost:3000/all-equipment");
+          const data = await response.json();
+
+          const tableBody = document.getElementById("equipmentTableBody");
+          tableBody.innerHTML = ""; // ล้างคำว่า "กำลังโหลด..." ออก
+
+          if (data.length === 0) {
+            tableBody.innerHTML =
+              '<tr><td colspan="5" style="text-align:center;">ไม่พบข้อมูลอุปกรณ์</td></tr>';
+            return;
+          }
+
+          // 💡 วนลูปสร้างแถวในตารางตามข้อมูลจาก Database
+          data.forEach((item) => {
+            const row = `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.equipment_id}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.model}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">${item.brand}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">฿${item.daily_rate.toLocaleString()}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">
+                        <button onclick="editItem(${item.equipment_id})" style="background:#f39c12; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Edit</button>
+                        <button onclick="deleteItem(${item.equipment_id})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:3px; cursor:pointer;">Delete</button>
+                    </td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+          });
+        } catch (error) {
+          console.error("Error:", error);
+          document.getElementById("equipmentTableBody").innerHTML =
+            '<tr><td colspan="5" style="color:red; text-align:center;">โหลดข้อมูลไม่สำเร็จ กรุณาเช็คการเชื่อมต่อเซิร์ฟเวอร์</td></tr>';
+        }
+      }
+
+      // 💡 เรียกใช้งานฟังก์ชันทันทีที่โหลดหน้าเสร็จ (ใส่เพิ่มใน window.onload เดิม)
+      const originalOnload = window.onload;
+      window.onload = function () {
+        if (originalOnload) originalOnload();
+        loadEquipment();
+      };
+
+      function openModal() {
+        document.getElementById("addModal").style.display = "block";
+      }
+      function closeModal() {
+        document.getElementById("addModal").style.display = "none";
+      }
+
+      async function saveEquipment() {
+        // 💡 1. สร้างเลขสุ่ม 10 หลักที่ขึ้นต้นด้วยเลข 3
+        // สูตร: 3,000,000,000 + (สุ่ม 0 ถึง 999,999,999)
+        const randomId = Math.floor(3000000000 + Math.random() * 1000000000);
+
+        // 2. ดึงข้อมูลจากช่อง Input
+        const brand = document.getElementById("new_brand").value;
+        const model = document.getElementById("new_model").value;
+        const daily_rate = document.getElementById("new_rate").value;
+        const Serial_number = document.getElementById("new_serial").value;
+        const category_id = document.getElementById("new_cat").value;
+
+        if (!brand || !model || !daily_rate) {
+          alert("กรุณากรอกข้อมูลสำคัญให้ครบถ้วน!");
+          return;
+        }
+
+        // 3. รวมข้อมูลที่จะส่งไป Backend (รวม equipment_id ที่สุ่มมาด้วย)
+        const newData = {
+          equipment_id: randomId, // ส่ง ID ที่สุ่มได้ไป
+          brand: brand,
+          model: model,
+          daily_rate: daily_rate,
+          Serial_number: Serial_number,
+          category_id: category_id,
+          equipment_status: "Available",
+          deposit_fee: 0, // ใส่ค่าพื้นฐานป้องกัน Error null
+          Condition_: "Good", // ใส่ค่าพื้นฐานป้องกัน Error null
+        };
+
+        console.log("กำลังส่งข้อมูล:", newData); // ไว้เช็คใน Console (F12)
+
+        try {
+          const response = await fetch("http://localhost:3000/add-equipment", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newData),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            alert("🎉 บันทึกสำเร็จ! ID ของคุณคือ: " + randomId);
+            closeModal();
+            location.reload();
+          } else {
+            alert("เกิดข้อผิดพลาด: " + result.message);
+          }
+        } catch (error) {
+          console.error("Save Error:", error);
+          alert("ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้");
+        }
+      }
+    </script>
+  </body>
+</html>

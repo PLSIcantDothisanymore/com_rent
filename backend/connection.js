@@ -1,5 +1,5 @@
 import util from "util"
-import mysql from "mysql2"
+import mysql from 'mysql2'
 import "dotenv/config";
 
 
