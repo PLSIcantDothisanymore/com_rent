@@ -221,6 +221,29 @@ async function submitOrder() {
     }
 }
 
+// API สำหรับดึงข้อมูล Customer จาก User_ID เพื่อเช็คว่าเคยกรอกข้อมูลหรือยัง
+// API สำหรับตรวจสอบว่า User นี้มีข้อมูลลูกค้า (Customer) หรือยัง
+app.get("/get-customer-profile/:userId", async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        const [rows] = await pool.promise().query(
+            "SELECT * FROM customer WHERE user_id = ?", 
+            [userId]
+        );
+
+        if (rows.length > 0) {
+            // ถ้าเจอข้อมูล ส่ง JSON กลับไป
+            res.json(rows[0]);
+        } else {
+            // ถ้าไม่เจอ ส่ง JSON บอกว่าไม่พบ
+            res.json({ notFound: true });
+        }
+    } catch (error) {
+        console.error("DB Error:", error);
+        res.status(500).json({ message: "Server Error" });
+    }
+});
+
 
 //get => fecth data(query,params)
 //post => add data(body)

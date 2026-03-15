@@ -138,7 +138,7 @@
           <button class="btn-cancel" onclick="hideConfirmDialog()">
             ยกเลิก
           </button>
-          <button class="btn-ok" onclick="doConfirm()">ยืนยัน</button>
+          <button class="btn-ok" onclick="confirmOrder()">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -320,88 +320,46 @@
         if (e.target === e.currentTarget) hideConfirmDialog();
       }
 
-      async function doConfirm() {
-        // ตรวจสอบว่าผู้ใช้ได้เข้าสู่ระบบหรือไม่
-        if (!currentUser) {
-          showToast("❌ กรุณาเข้าสู่ระบบก่อนทำการจอง");
-          closeCartModal();
-          hideConfirmDialog();
-          showAuthModal();
+      async function confirmOrder() {
+        // 1. ตรวจสอบว่าล็อกอินหรือยัง
+        const userStr = localStorage.getItem("user");
+        if (!userStr) {
+          alert("กรุณาเข้าสู่ระบบก่อนสั่งจองครับ");
+          showAuthModal(); // เปิดหน้าต่าง Login
           return;
         }
 
-        // ตรวจสอบว่ามีสินค้าในตะกร้าหรือไม่
+        const user = JSON.parse(userStr);
+        const userId = user.user_id; // หรือ user.User_ID ตามที่ Database คุณใช้
+
         if (cart.length === 0) {
-          showToast("❌ ตะกร้าว่างเปล่า");
+          alert("ตะกร้าว่างเปล่า กรุณาเลือกสินค้าก่อนครับ");
           return;
         }
 
         try {
-          // ส่งข้อมูลการจองไปยัง Backend
-          const rentalData = {
-            customer_id:
-              currentUser.id || currentUser.user_id || currentUser.customer_id,
-            items: cart.map((item) => ({
-              equipment_id: item.equipment_id,
-              daily_rate: item.daily_rate,
-            })),
-            total_amount: Number(
-              cart
-                .reduce((sum, item) => sum + (Number(item.daily_rate) || 0), 0)
-                .toFixed(2),
-            ),
-          };
-
-          console.log("📤 ส่งข้อมูลการจอง:", rentalData);
-
-          const response = await fetch("http://127.0.0.1:3000/confirm-rental", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(rentalData),
-          });
-
-          console.log("📥 Status Code:", response.status);
-          console.log(
-            "📥 Response Headers:",
-            response.headers.get("content-type"),
+          // 2. ตรวจสอบว่า User นี้เคยกรอกข้อมูล Customer หรือยัง
+          // โดยเรียก API ที่เราคุยกันไว้ก่อนหน้า (หรือใช้ API ที่เช็คจาก User_ID)
+          const response = await fetch(
+            `http://localhost:3000/get-customer-profile/${userId}`,
           );
+          const customerData = await response.json();
 
-          // ตรวจสอบว่า response เป็น JSON หรือไม่
-          const contentType = response.headers.get("content-type");
-          let result;
+          // เก็บข้อมูลตะกร้าลง LocalStorage เพื่อใช้ในหน้าถัดไป
+          localStorage.setItem("cartData", JSON.stringify(cart));
 
-          if (contentType && contentType.includes("application/json")) {
-            result = await response.json();
+          if (customerData.notFound) {
+            // ถ้ายังไม่มีข้อมูลลูกค้า -> ไปหน้ากรอกชื่อ/เบอร์โทร
+            alert("กรุณากรอกข้อมูลผู้เช่าก่อนทำรายการครับ");
+            window.location.href = "customer.html?fromCart=true";
           } else {
-            const text = await response.text();
-            console.error("❌ Server ตอบกลับมาไม่ใช่ JSON:", text);
-            showToast(
-              "❌ เซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาตรวจสอบว่า Backend รันอยู่ที่ http://127.0.0.1:3000",
-            );
-            return;
+            // ถ้ามีข้อมูลแล้ว -> ไปหน้าเปิดบิลเช่าได้เลย
+            localStorage.setItem("customer_id", customerData.customer_id);
+            window.location.href = "rental.html";
           }
-
-          if (!response.ok) {
-            showToast(
-              "❌ " +
-                (result.message || result.error || "เกิดข้อผิดพลาดในการจอง"),
-            );
-            return;
-          }
-
-          // สำเร็จ ล้างตะกร้าและแสดงข้อความ
-          hideConfirmDialog();
-          closeCartModal();
-          cart = [];
-          updateCartUI();
-          showToast(
-            "✅ จองเรียบร้อยแล้วครับ! หมายเลขใบจอง: " + result.rentalId,
-          );
         } catch (error) {
-          console.error("❌ Error:", error);
-          showToast(
-            "❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์: " + error.message,
-          );
+          console.error("Error checking customer:", error);
+          alert("เกิดข้อผิดพลาดในการตรวจสอบข้อมูลลูกค้า");
         }
       }
 
