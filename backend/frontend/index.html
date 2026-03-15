@@ -101,7 +101,6 @@
       </div>
     </div>
 
-    <!-- Cart Modal -->
     <div id="cart-overlay" onclick="handleOverlayClick(event)">
       <div id="cart-modal">
         <div class="cart-modal-header">
@@ -125,7 +124,6 @@
       </div>
     </div>
 
-    <!-- Confirm Dialog -->
     <div id="confirm-overlay" onclick="handleConfirmOverlayClick(event)">
       <div id="confirm-dialog">
         <p class="confirm-icon">✅</p>
@@ -143,7 +141,6 @@
       </div>
     </div>
 
-    <!-- Toast -->
     <div id="toast"></div>
 
     <script>
@@ -321,34 +318,34 @@
       }
 
       async function confirmOrder() {
-        // 1. ตรวจสอบว่าล็อกอินหรือยัง
-        const userStr = localStorage.getItem("user");
-        if (!userStr) {
-          alert("กรุณาเข้าสู่ระบบก่อนสั่งจองครับ");
-          showAuthModal(); // เปิดหน้าต่าง Login
-          return;
-        }
-
-        const user = JSON.parse(userStr);
-        const userId = user.user_id; // หรือ user.User_ID ตามที่ Database คุณใช้
-
         if (cart.length === 0) {
           alert("ตะกร้าว่างเปล่า กรุณาเลือกสินค้าก่อนครับ");
           return;
         }
 
+        // เก็บข้อมูลตะกร้าลง LocalStorage เพื่อใช้ในหน้าถัดไป
+        localStorage.setItem("cartData", JSON.stringify(cart));
+
+        // 1. ตรวจสอบว่าล็อกอินหรือยัง
+        const userStr = localStorage.getItem("user");
+        if (!userStr) {
+          // ลบ showAuthModal() และการบังคับ login ออก
+          // เปลี่ยนหน้าไปหน้า customer เพื่อให้กรอกข้อมูลทันที
+          window.location.href = "customer.html?fromCart=true";
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const userId = user.user_id || user.id; // ดักเผื่อใช้ user.id
+
         try {
           // 2. ตรวจสอบว่า User นี้เคยกรอกข้อมูล Customer หรือยัง
-          // โดยเรียก API ที่เราคุยกันไว้ก่อนหน้า (หรือใช้ API ที่เช็คจาก User_ID)
           const response = await fetch(
             `http://localhost:3000/get-customer-profile/${userId}`,
           );
           const customerData = await response.json();
 
-          // เก็บข้อมูลตะกร้าลง LocalStorage เพื่อใช้ในหน้าถัดไป
-          localStorage.setItem("cartData", JSON.stringify(cart));
-
-          if (customerData.notFound) {
+          if (customerData.notFound || !customerData.customer_id) {
             // ถ้ายังไม่มีข้อมูลลูกค้า -> ไปหน้ากรอกชื่อ/เบอร์โทร
             alert("กรุณากรอกข้อมูลผู้เช่าก่อนทำรายการครับ");
             window.location.href = "customer.html?fromCart=true";
@@ -359,7 +356,8 @@
           }
         } catch (error) {
           console.error("Error checking customer:", error);
-          alert("เกิดข้อผิดพลาดในการตรวจสอบข้อมูลลูกค้า");
+          // กรณีมีข้อผิดพลาดให้ไปหน้า customer เลยเพื่อไม่ให้ค้าง
+          window.location.href = "customer.html?fromCart=true";
         }
       }
 
