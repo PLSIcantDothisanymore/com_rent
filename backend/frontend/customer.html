@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>ข้อมูลส่วนตัว - PC Parts Rental</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container" style="max-width: 500px; margin-top: 50px;">
+        <div class="product-card" style="padding: 30px;">
+            <h2>ข้อมูลลูกค้า (Customer Profile)</h2>
+            <form id="customerForm" style="text-align: left;">
+                <div style="margin-bottom: 15px;">
+                    <label>ชื่อ-นามสกุล (Full Name) *</label>
+                    <input type="text" id="full_name" style="width: 100%; padding: 8px; box-sizing: border-box;" required>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label>เบอร์โทรศัพท์ (Phone) *</label>
+                    <input type="text" id="phone" style="width: 100%; padding: 8px; box-sizing: border-box;" required>
+                </div>
+                <button type="button" onclick="saveCustomer()" style="width: 100%; padding: 10px; background: #28a745; color: white; border: none; cursor: pointer; border-radius: 6px; font-size: 14px; font-weight: 600;">บันทึกข้อมูล</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const userId = localStorage.getItem('user_id');
+        if (!userId) {
+            alert("กรุณาเข้าสู่ระบบก่อน");
+            window.location.href = 'login.html';
+        }
+
+        // เช็คว่ามาจากไหน: ?from=cart = มาจากกดยืนยันจอง, ไม่มี = มาแก้โปรไฟล์เอง
+        const urlParams = new URLSearchParams(window.location.search);
+        const cameFromCart = urlParams.get('from') === 'cart';
+
+        // ดึงข้อมูลเดิมมา pre-fill ในฟอร์ม
+        async function loadProfile() {
+            try {
+                const res = await fetch(`http://localhost:3000/check-customer/${userId}`);
+                const data = await res.json();
+                if (data.exists && data.customer) {
+                    document.getElementById('full_name').value = data.customer.full_name || '';
+                    document.getElementById('phone').value = data.customer.phone || '';
+                }
+            } catch (err) {
+                console.error('โหลดข้อมูลไม่ได้:', err);
+            }
+        }
+        loadProfile();
+
+        async function saveCustomer() {
+            const full_name = document.getElementById('full_name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!full_name || !phone) {
+                alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+                return;
+            }
+
+            const customerId = "21" + Math.floor(10000000 + Math.random() * 90000000);
+
+            const payload = {
+                customer_id: customerId,
+                full_name: full_name,
+                phone: phone,
+                user_id: userId
+            };
+
+            try {
+                const res = await fetch('http://localhost:3000/save-customer', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    alert("บันทึกข้อมูลสำเร็จ!");
+                    // ถ้ามาจากตะกร้า → ไปหน้า rental ต่อ
+                    // ถ้ามาแก้โปรไฟล์เอง → กลับหน้าแรก
+                    if (cameFromCart) {
+                        window.location.href = 'rental.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
+                } else {
+                    const err = await res.json();
+                    alert("เกิดข้อผิดพลาด: " + err.message);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -122,6 +122,106 @@ app.post('/login', async (req, res) => {
     }
 });
 
+
+// ============================================
+// ส่วนของ Route /confirm-rental ที่แก้ไขแล้ว
+// ============================================
+// นำโค้ดนี้ไปแทนที่ส่วน app.post("/confirm-rental", ...) ในไฟล์ app.js ของคุณ
+
+app.post("/confirm-rental", async (req, res) => {
+  const { customer_id, items, total_amount } = req.body;
+  const rental_id = Math.floor(100000 + Math.random() * 900000);
+
+  let connection;
+  try {
+    // ✅ ดึง connection แบบ Promise (ต้องใช้ mysql2/promise เท่านั้น)
+    connection = await pool.getConnection(); 
+    
+    await connection.beginTransaction();
+
+    // 1. Insert ลงตาราง rental
+    await connection.execute(
+      "INSERT INTO rental (rental_id, total_amount, rental_status, customer_id) VALUES (?, ?, 'Pending', ?)",
+      [rental_id, total_amount, customer_id]
+    );
+
+    // 2. Loop Insert รายการอุปกรณ์
+    for (let item of items) {
+      await connection.execute(
+        "INSERT INTO rental_detail (rental_id, equipment_id, price_per_day) VALUES (?, ?, ?)",
+        [rental_id, item.equipment_id, item.daily_rate]
+      );
+    }
+
+    await connection.commit();
+    res.json({ success: true, message: "จองสำเร็จ!", rental_id: rental_id });
+
+  } catch (error) {
+    if (connection) await connection.rollback();
+    console.error("❌ Error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+
+async function submitOrder() {
+    // 1. ดึงข้อมูลจาก localStorage
+    const cart = JSON.parse(localStorage.getItem('cartData') || '[]');
+    const customerId = localStorage.getItem('customer_id');
+
+    // ตรวจสอบว่ามีสินค้าในตะกร้าหรือไม่
+    if (cart.length === 0) {
+        alert("❌ ไม่มีสินค้าในตะกร้า");
+        return;
+    }
+
+    // ตรวจสอบว่ามีข้อมูลลูกค้าหรือไม่
+    if (!customerId) {
+        alert("❌ ไม่พบข้อมูลลูกค้า กรุณากรอกข้อมูลก่อนทำการจอง");
+        // window.location.href = "customer.html"; // อาจจะส่งกลับไปหน้ากรอกข้อมูล
+        return;
+    }
+
+    // 2. คำนวณยอดรวม (ตรวจสอบว่าเป็นตัวเลขแน่นอน)
+    const totalAmount = cart.reduce((sum, item) => sum + (Number(item.daily_rate) || 0), 0);
+
+    // เตรียมข้อมูลส่งไปยัง Backend
+    const orderData = {
+        customer_id: customerId,
+        items: cart.map(item => ({
+            equipment_id: item.equipment_id,
+            daily_rate: item.daily_rate
+        })),
+        total_amount: totalAmount
+    };
+
+    console.log("📤 กำลังส่งข้อมูลการจอง:", orderData);
+
+    try {
+        const response = await fetch('http://localhost:3000/confirm-rental', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData )
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            alert("✅ การสั่งจองสำเร็จ! เลขที่ใบจอง: " + result.rental_id);
+            localStorage.removeItem('cartData'); // ล้างตะกร้า
+            window.location.href = "index.html"; // กลับหน้าหลัก
+        } else {
+            alert("❌ การจองไม่สำเร็จ: " + (result.message || "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์"));
+        }
+    } catch (error) {
+        console.error("Error:", error);
+        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
+    }
+}
+
+
 //get => fecth data(query,params)
 //post => add data(body)
 //put => edit data(body)

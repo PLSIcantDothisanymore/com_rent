@@ -297,7 +297,7 @@
                         <div class="cart-item-name">${item.brand} ${item.model}</div>
                         <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || "ทั่วไป"} · ฿${Number(item.daily_rate).toLocaleString()}/วัน</div>
                     </div>
-                    <button class="delete-btn" onclick="removeFromCart(${i})" title="ลบ">🗑</button>
+                    <button class="cart-item-remove" onclick="removeFromCart(${i})">ลบ</button>
                 </div>
             `,
           )
@@ -320,12 +320,89 @@
         if (e.target === e.currentTarget) hideConfirmDialog();
       }
 
-      function doConfirm() {
-        hideConfirmDialog();
-        closeCartModal();
-        cart = [];
-        updateCartUI();
-        showToast("จองเรียบร้อยแล้วครับ! 🎉");
+      async function doConfirm() {
+        // ตรวจสอบว่าผู้ใช้ได้เข้าสู่ระบบหรือไม่
+        if (!currentUser) {
+          showToast("❌ กรุณาเข้าสู่ระบบก่อนทำการจอง");
+          closeCartModal();
+          hideConfirmDialog();
+          showAuthModal();
+          return;
+        }
+
+        // ตรวจสอบว่ามีสินค้าในตะกร้าหรือไม่
+        if (cart.length === 0) {
+          showToast("❌ ตะกร้าว่างเปล่า");
+          return;
+        }
+
+        try {
+          // ส่งข้อมูลการจองไปยัง Backend
+          const rentalData = {
+            customer_id:
+              currentUser.id || currentUser.user_id || currentUser.customer_id,
+            items: cart.map((item) => ({
+              equipment_id: item.equipment_id,
+              daily_rate: item.daily_rate,
+            })),
+            total_amount: Number(
+              cart
+                .reduce((sum, item) => sum + (Number(item.daily_rate) || 0), 0)
+                .toFixed(2),
+            ),
+          };
+
+          console.log("📤 ส่งข้อมูลการจอง:", rentalData);
+
+          const response = await fetch("http://127.0.0.1:3000/confirm-rental", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(rentalData),
+          });
+
+          console.log("📥 Status Code:", response.status);
+          console.log(
+            "📥 Response Headers:",
+            response.headers.get("content-type"),
+          );
+
+          // ตรวจสอบว่า response เป็น JSON หรือไม่
+          const contentType = response.headers.get("content-type");
+          let result;
+
+          if (contentType && contentType.includes("application/json")) {
+            result = await response.json();
+          } else {
+            const text = await response.text();
+            console.error("❌ Server ตอบกลับมาไม่ใช่ JSON:", text);
+            showToast(
+              "❌ เซิร์ฟเวอร์ไม่พร้อมใช้งาน กรุณาตรวจสอบว่า Backend รันอยู่ที่ http://127.0.0.1:3000",
+            );
+            return;
+          }
+
+          if (!response.ok) {
+            showToast(
+              "❌ " +
+                (result.message || result.error || "เกิดข้อผิดพลาดในการจอง"),
+            );
+            return;
+          }
+
+          // สำเร็จ ล้างตะกร้าและแสดงข้อความ
+          hideConfirmDialog();
+          closeCartModal();
+          cart = [];
+          updateCartUI();
+          showToast(
+            "✅ จองเรียบร้อยแล้วครับ! หมายเลขใบจอง: " + result.rentalId,
+          );
+        } catch (error) {
+          console.error("❌ Error:", error);
+          showToast(
+            "❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์: " + error.message,
+          );
+        }
       }
 
       // --- Toast ---
