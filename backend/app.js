@@ -22,228 +22,200 @@ const dbConfig = {
 };
 
 // ==========================================
-// 1. API สมัครสมาชิก (Register) - ฉบับสมบูรณ์
+// ส่วนที่ 1: ระบบสมาชิก (User)
 // ==========================================
+
 app.post('/register', async (req, res) => {
-    const { email, password, name } = req.body;
-
-    // เช็คว่ากรอกข้อมูลครบไหม
-    if (!email || !password || !name) {
-        return res.status(400).json({ error: 'กรุณากรอกข้อมูลให้ครบถ้วน' });
+    const { user_id, username, password } = req.body;
+    if (!user_id || !username || !password) {
+        return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
     }
-
-    let connection; 
     try {
-        connection = await pool.promise().getConnection(); 
-        await connection.beginTransaction();
-
-        // 1. เช็คว่ามีอีเมลนี้หรือยังในตาราง user
-        const [existingUsers] = await connection.execute('SELECT * FROM user WHERE Username = ?', [email]);
-        if (existingUsers.length > 0) {
-            await connection.rollback();
-            return res.status(400).json({ error: 'อีเมลนี้ถูกใช้งานแล้ว' });
-        }
-
-        // 2. เข้ารหัสผ่าน
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        // 3. บันทึกลงตาราง user
-        const [userResult] = await connection.execute(
-            'INSERT INTO user (Username, Password, Role) VALUES (?, ?, ?)',
-            [email, hashedPassword, 'customer']
-        );
-        // ดึง ID ของ user ที่เพิ่งสร้างมาเก็บไว้ในตัวแปร newUserId
-        const newUserId = userResult.insertId; 
-
-        // 4. สุ่มรหัสลูกค้า 10 หลัก สำหรับตาราง customer
-        const randomCustomerId = Math.floor(1000000000 + Math.random() * 9000000000);
-
-        // 5. บันทึกลงตาราง customer
-        await connection.execute(
-            'INSERT INTO customer (customer_id, User_ID, full_name) VALUES (?, ?, ?)',
-            [randomCustomerId, newUserId, name]
-        );
-
-        // สำเร็จ! บันทึกข้อมูลลงฐานข้อมูลจริงๆ
-        await connection.commit();
-        res.status(201).json({ message: 'สมัครสมาชิกสำเร็จ!' });
-
+        const sql = "INSERT INTO user (user_id, username, password) VALUES (?, ?, ?)";
+        await pool.query(sql, [user_id, username, password]);
+        return res.status(200).json({ message: "สมัครสมาชิกสำเร็จ" });
     } catch (error) {
-        if (connection) await connection.rollback(); // ถ้ามี Error ให้ยกเลิกการบันทึกข้อมูล
-        console.error('Register Error:', error);
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในการสมัครสมาชิก' });
-    } finally {
-        if (connection) connection.release(); // คืนการเชื่อมต่อให้ระบบ
+        console.error("Register Error:", error);
+        return res.status(500).json({ message: "ไม่สามารถสมัครสมาชิกได้", errorDetail: error.message });
     }
 });
 
-
-// ==========================================
-// 2. API เข้าสู่ระบบ (Login)
-// ==========================================
 app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-        return res.status(400).json({ error: 'กรุณากรอกอีเมลและรหัสผ่าน' });
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ message: "กรุณากรอก Username และ Password" });
     }
-
     try {
-        // 💡 1. เปลี่ยนคอลัมน์ username เป็นตัวเล็ก
-        const [users] = await pool.promise().execute('SELECT * FROM user WHERE username = ?', [email]);
-        
-        if (users.length === 0) {
-            return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
-        }
+        const sql = "SELECT * FROM user WHERE username = ? AND password = ?";
+        const result = await pool.query(sql, [username, password]);
+        const rows = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
 
-        const user = users[0];
-
-        // 💡 2. เปลี่ยน user.Password เป็น user.password (ตัว p เล็ก)
-        const isMatch = await bcrypt.compare(password, user.password);
-        
-        if (!isMatch) {
-            return res.status(401).json({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
-        }
-
-        res.json({
-            message: 'เข้าสู่ระบบสำเร็จ',
-            user: {
-                // 💡 3. เปลี่ยนชื่อคอลัมน์ให้เป็นตัวเล็กทั้งหมด
-                id: user.user_id,         
-                username: user.username,  
-                role: user.role           
-            }
-        });
-
-    } catch (error) {
-        console.error('Login Error:', error);
-        res.status(500).json({ error: 'เกิดข้อผิดพลาดในระบบ' });
-    }
-});
-
-
-// ============================================
-// ส่วนของ Route /confirm-rental ที่แก้ไขแล้ว
-// ============================================
-// นำโค้ดนี้ไปแทนที่ส่วน app.post("/confirm-rental", ...) ในไฟล์ app.js ของคุณ
-
-app.post("/confirm-rental", async (req, res) => {
-  const { customer_id, items, total_amount } = req.body;
-  const rental_id = Math.floor(100000 + Math.random() * 900000);
-
-  let connection;
-  try {
-    // ✅ ดึง connection แบบ Promise (ต้องใช้ mysql2/promise เท่านั้น)
-    connection = await pool.getConnection(); 
-    
-    await connection.beginTransaction();
-
-    // 1. Insert ลงตาราง rental
-    await connection.execute(
-      "INSERT INTO rental (rental_id, total_amount, rental_status, customer_id) VALUES (?, ?, 'Pending', ?)",
-      [rental_id, total_amount, customer_id]
-    );
-
-    // 2. Loop Insert รายการอุปกรณ์
-    for (let item of items) {
-      await connection.execute(
-        "INSERT INTO rental_detail (rental_id, equipment_id, price_per_day) VALUES (?, ?, ?)",
-        [rental_id, item.equipment_id, item.daily_rate]
-      );
-    }
-
-    await connection.commit();
-    res.json({ success: true, message: "จองสำเร็จ!", rental_id: rental_id });
-
-  } catch (error) {
-    if (connection) await connection.rollback();
-    console.error("❌ Error:", error.message);
-    res.status(500).json({ success: false, message: error.message });
-  } finally {
-    if (connection) connection.release();
-  }
-});
-
-
-async function submitOrder() {
-    // 1. ดึงข้อมูลจาก localStorage
-    const cart = JSON.parse(localStorage.getItem('cartData') || '[]');
-    const customerId = localStorage.getItem('customer_id');
-
-    // ตรวจสอบว่ามีสินค้าในตะกร้าหรือไม่
-    if (cart.length === 0) {
-        alert("❌ ไม่มีสินค้าในตะกร้า");
-        return;
-    }
-
-    // ตรวจสอบว่ามีข้อมูลลูกค้าหรือไม่
-    if (!customerId) {
-        alert("❌ ไม่พบข้อมูลลูกค้า กรุณากรอกข้อมูลก่อนทำการจอง");
-        // window.location.href = "customer.html"; // อาจจะส่งกลับไปหน้ากรอกข้อมูล
-        return;
-    }
-
-    // 2. คำนวณยอดรวม (ตรวจสอบว่าเป็นตัวเลขแน่นอน)
-    const totalAmount = cart.reduce((sum, item) => sum + (Number(item.daily_rate) || 0), 0);
-
-    // เตรียมข้อมูลส่งไปยัง Backend
-    const orderData = {
-        customer_id: customerId,
-        items: cart.map(item => ({
-            equipment_id: item.equipment_id,
-            daily_rate: item.daily_rate
-        })),
-        total_amount: totalAmount
-    };
-
-    console.log("📤 กำลังส่งข้อมูลการจอง:", orderData);
-
-    try {
-        const response = await fetch('http://localhost:3000/confirm-rental', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData )
-        });
-
-        const result = await response.json();
-        
-        if (response.ok && result.success) {
-            alert("✅ การสั่งจองสำเร็จ! เลขที่ใบจอง: " + result.rental_id);
-            localStorage.removeItem('cartData'); // ล้างตะกร้า
-            window.location.href = "index.html"; // กลับหน้าหลัก
+        if (rows && rows.length > 0) {
+            return res.status(200).json({ message: "ล็อกอินสำเร็จ!", user: rows[0] });
         } else {
-            alert("❌ การจองไม่สำเร็จ: " + (result.message || "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์"));
+            return res.status(401).json({ message: "Username หรือ Password ไม่ถูกต้อง" });
         }
     } catch (error) {
-        console.error("Error:", error);
-        alert("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
-    }
-}
-
-// API สำหรับดึงข้อมูล Customer จาก User_ID เพื่อเช็คว่าเคยกรอกข้อมูลหรือยัง
-// API สำหรับตรวจสอบว่า User นี้มีข้อมูลลูกค้า (Customer) หรือยัง
-app.get("/get-customer-profile/:userId", async (req, res) => {
-    try {
-        const userId = req.params.userId;
-        const [rows] = await pool.promise().query(
-            "SELECT * FROM customer WHERE user_id = ?", 
-            [userId]
-        );
-
-        if (rows.length > 0) {
-            // ถ้าเจอข้อมูล ส่ง JSON กลับไป
-            res.json(rows[0]);
-        } else {
-            // ถ้าไม่เจอ ส่ง JSON บอกว่าไม่พบ
-            res.json({ notFound: true });
-        }
-    } catch (error) {
-        console.error("DB Error:", error);
-        res.status(500).json({ message: "Server Error" });
+        console.error("Login Error:", error);
+        return res.status(500).json({ message: "ระบบล็อกอินมีปัญหา", errorDetail: error.message });
     }
 });
 
+// ==========================================
+// ส่วนที่ 2: จัดการข้อมูลลูกค้า (Customer)
+// ==========================================
+
+// ตรวจสอบว่า User นี้เคยกรอกข้อมูลลูกค้าหรือยัง
+// ถ้าเคยกรอกแล้ว → ส่งข้อมูลเดิมกลับไปให้หน้าเว็บ pre-fill ในฟอร์มทันที
+app.get('/check-customer/:id', async (req, res) => {
+    const userId = req.params.id;
+    try {
+        const sql = "SELECT * FROM customer WHERE user_id = ?";
+        const result = await pool.query(sql, [userId]);
+        const rows = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
+
+        if (rows && rows.length > 0) {
+            return res.status(200).json({ 
+                exists: true, 
+                customer: rows[0]
+            });
+        } else {
+            return res.status(200).json({ exists: false });
+        }
+    } catch (error) {
+        console.error("Check Customer Error:", error);
+        return res.status(500).json({ message: "ระบบมีปัญหา", errorDetail: error.message });
+    }
+});
+
+// บันทึก/อัปเดตข้อมูลลูกค้า
+// ถ้า User_id นี้มีข้อมูลอยู่แล้ว → UPDATE แทนที่ข้อมูลเดิม
+// ถ้ายังไม่มี → INSERT ใหม่
+app.post('/save-customer', async (req, res) => {
+    const { customer_id, full_name, phone, user_id } = req.body;
+
+    if (!full_name || !phone || !user_id) {
+        return res.status(400).json({ message: "กรุณากรอกข้อมูลให้ครบถ้วน" });
+    }
+
+    try {
+        const checkSql = "SELECT * FROM customer WHERE user_id = ?";
+        const result = await pool.query(checkSql, [user_id]);
+        const rows = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
+
+        if (rows && rows.length > 0) {
+            // มีอยู่แล้ว → UPDATE
+            const updateSql = `UPDATE customer SET full_name = ?, phone = ? WHERE user_id = ?`;
+            await pool.query(updateSql, [full_name, phone, user_id]);
+            return res.status(200).json({ message: "อัปเดตข้อมูลลูกค้าสำเร็จ" });
+        } else {
+            // ยังไม่มี → INSERT
+            const insertSql = `INSERT INTO customer (customer_id, full_name, phone, user_id) VALUES (?, ?, ?, ?)`;
+            await pool.query(insertSql, [customer_id, full_name, phone, user_id]);
+            return res.status(200).json({ message: "บันทึกข้อมูลลูกค้าสำเร็จ" });
+        }
+
+    } catch (error) {
+        console.error("Save Customer Error:", error);
+        return res.status(500).json({ message: "บันทึกไม่สำเร็จ", errorDetail: error.message });
+    }
+});
+
+app.get("/all-customer", async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM customer");
+        return res.json(rows);
+    } catch (error) {
+        return res.status(500).json({ message: "Error", errorDetail: error.message });
+    }
+});
+
+// ==========================================
+// ส่วนที่ 3: ดึงข้อมูลสินค้าและหมวดหมู่
+// ==========================================
+
+app.get("/all-category", async (req, res) => {
+    try {
+        const rows = await pool.query("SELECT * FROM category");
+        return res.json(rows);
+    } catch (error) {
+        return res.status(500).json({ message: "Error", errorDetail: error.message });
+    }
+});
+
+app.get("/all-equipment", async (req, res) => {
+    try {
+        const rows = await pool.query("SELECT * FROM equipment");
+        return res.json(rows);
+    } catch (error) {
+        return res.status(500).json({ message: "Error", errorDetail: error.message });
+    }
+});
+
+app.get("/equipment/:id", async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT * FROM equipment WHERE equipment_id = ?", [req.params.id]);
+        if (rows.length > 0) return res.json(rows[0]);
+        return res.status(404).json({ message: "ไม่พบสินค้านี้" });
+    } catch (error) {
+        return res.status(500).json({ message: "Error", errorDetail: error.message });
+    }
+});
+
+// ==========================================
+// ส่วนที่ 4: ระบบเช่าและชำระเงิน
+// ==========================================
+
+app.post("/add-rental", async (req, res) => {
+    const { rental_id, order_date, total_amount, total_deposit, payment_status, customer_id } = req.body;
+    try {
+        const sql = `INSERT INTO rental (rental_id, order_date, total_amount, total_deposit, payment_status, customer_id) 
+                     VALUES (?, ?, ?, ?, ?, ?)`;
+        await pool.query(sql, [rental_id, order_date, total_amount, total_deposit, payment_status, customer_id]);
+        return res.status(200).json({ message: "สร้างใบสั่งเช่าสำเร็จ!", rental_id: rental_id });
+    } catch (error) {
+        console.error("Add Rental Error:", error);
+        return res.status(500).json({ message: "สร้างใบสั่งเช่าไม่สำเร็จ", errorDetail: error.message });
+    }
+});
+
+app.post("/add-rental-detail", async (req, res) => {
+    const { rentaldetail_id, start_date, end_date, rental_id, equipment_id } = req.body;
+    try {
+        const sql = `INSERT INTO rental_detail (rentaldetail_id, start_date, end_date, rental_id, equipment_id) 
+                     VALUES (?, ?, ?, ?, ?)`;
+        await pool.query(sql, [rentaldetail_id, start_date, end_date, rental_id, equipment_id]);
+        return res.status(200).json({ message: "บันทึกรายละเอียดการเช่าสำเร็จ!" });
+    } catch (error) {
+        console.error("Add Rental Detail Error:", error);
+        return res.status(500).json({ message: "บันทึกรายละเอียดไม่สำเร็จ", errorDetail: error.message });
+    }
+});
+
+app.post("/add-payment", async (req, res) => {
+    const { payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id } = req.body;
+    try {
+        const sql = `INSERT INTO payment (payment_id, payment_date, payment_amount, payment_method, payment_proof, rental_id) 
+                     VALUES (?, ?, ?, ?, ?, ?)`;
+        const proof = payment_proof === "NULL" ? null : payment_proof;
+        await pool.query(sql, [payment_id, payment_date, payment_amount, payment_method, proof, rental_id]);
+        return res.status(200).json({ message: "บันทึกการชำระเงินสำเร็จ!" });
+    } catch (error) {
+        console.error("Add Payment Error:", error);
+        return res.status(500).json({ message: "บันทึกไม่สำเร็จ", errorDetail: error.message });
+    }
+});
+
+// ==========================================
+// ดักจับ API ที่ไม่มีอยู่จริง
+// ==========================================
+app.use((req, res) => {
+    console.log(`⚠️ ไม่พบ API: ${req.method} ${req.originalUrl}`);
+    res.status(404).json({ 
+        message: "ไม่พบ API นี้ในระบบ", 
+        suggestion: `ตรวจสอบ URL ${req.originalUrl} ในไฟล์ HTML อีกครั้ง`
+    });
+});
 
 //get => fecth data(query,params)
 //post => add data(body)

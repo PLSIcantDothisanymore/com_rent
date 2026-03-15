@@ -5,88 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PC Parts Rental - บริการเช่าอุปกรณ์คอมพิวเตอร์</title>
     <link rel="stylesheet" href="style.css" />
+    <style>
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+      .btn-danger {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    </style>
   </head>
   <body>
     <header>
       <h1>PC Parts Rental</h1>
-
-      <div style="display: flex; gap: 20px; align-items: center">
-        <div id="auth-section">
-          <button class="auth-btn" id="login-btn" onclick="showAuthModal()">
-            เข้าสู่ระบบ
-          </button>
-
-          <div
-            id="user-profile"
-            style="display: none; align-items: center; gap: 10px"
-          >
-            <span>👤 <strong id="username-display">User</strong></span>
-            <button class="logout-btn" onclick="logout()">ออกจากระบบ</button>
-          </div>
-        </div>
+      <div class="header-actions">
+        <div id="auth-status"></div>
 
         <div id="cart-status">
           🛒 ตะกร้า:
           <span id="cart-count" style="font-weight: bold">0</span> ชิ้น
-          <button onclick="showCartModal()">ดูตะกร้าสินค้า</button>
+          <button class="btn-primary" onclick="showCartModal()">
+            ดูตะกร้าสินค้า
+          </button>
         </div>
       </div>
     </header>
-    <div id="auth-overlay" onclick="handleAuthOverlayClick(event)">
-      <div id="auth-modal">
-        <div class="cart-modal-header">
-          <h3 id="auth-title">เข้าสู่ระบบ</h3>
-          <button class="modal-close-btn" onclick="closeAuthModal()">✕</button>
-        </div>
-        <div style="padding: 24px">
-          <input
-            type="text"
-            id="auth-email"
-            class="auth-input"
-            placeholder="อีเมล"
-          />
-          <input
-            type="password"
-            id="auth-password"
-            class="auth-input"
-            placeholder="รหัสผ่าน"
-          />
 
-          <input
-            type="text"
-            id="auth-name"
-            class="auth-input"
-            placeholder="ชื่อ-นามสกุล"
-            style="display: none"
-          />
-
-          <button
-            class="confirm-btn"
-            id="auth-submit-btn"
-            onclick="processAuth()"
-          >
-            เข้าสู่ระบบ
-          </button>
-
-          <p
-            style="
-              text-align: center;
-              margin-top: 16px;
-              font-size: 14px;
-              color: #666;
-            "
-          >
-            <span id="auth-toggle-text">ยังไม่มีบัญชีใช่ไหม?</span>
-            <a
-              href="#"
-              onclick="toggleAuthMode()"
-              style="color: #000; font-weight: bold"
-              >คลิกที่นี่</a
-            >
-          </p>
-        </div>
-      </div>
-    </div>
     <div class="container">
       <h2>รายการอุปกรณ์ที่พร้อมให้เช่า</h2>
       <div class="filter-bar" id="filter-bar">
@@ -136,7 +102,7 @@
           <button class="btn-cancel" onclick="hideConfirmDialog()">
             ยกเลิก
           </button>
-          <button class="btn-ok" onclick="confirmOrder()">ยืนยัน</button>
+          <button class="btn-ok" onclick="doConfirm()">ยืนยัน</button>
         </div>
       </div>
     </div>
@@ -160,6 +126,35 @@
         107: "อื่นๆ",
       };
 
+      // 🟢 1. ตรวจสอบสถานะการ Login ทันทีที่โหลดหน้า
+      function checkLoginStatus() {
+        const userId = localStorage.getItem("user_id");
+        const authDiv = document.getElementById("auth-status");
+
+        if (userId) {
+          // ถ้าล็อคอินแล้ว ให้แสดงปุ่มแก้โปรไฟล์และออกจากระบบ
+          authDiv.innerHTML = `
+                    <button class="btn-secondary" onclick="window.location.href='customer.html'">แก้ไขข้อมูลส่วนตัว</button>
+                    <button class="btn-danger" onclick="logout()">ออกจากระบบ</button>
+                `;
+        } else {
+          // ถ้ายังไม่ล็อคอิน ให้แสดงปุ่มเข้าสู่ระบบ
+          authDiv.innerHTML = `
+                    <button class="btn-primary" onclick="window.location.href='login.html'">เข้าสู่ระบบ</button>
+                `;
+        }
+      }
+
+      // 🟢 2. ฟังก์ชันออกจากระบบ
+      function logout() {
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("customer_id");
+        alert("ออกจากระบบเรียบร้อยแล้ว");
+        window.location.reload();
+      }
+
+      checkLoginStatus(); // เรียกใช้งานทันที
+
       // --- ระบบ Filter Category ---
       function filterCategory(categoryId, btn) {
         activeCategory = categoryId;
@@ -172,7 +167,6 @@
 
       function buildCategoryButtons() {
         const bar = document.getElementById("filter-bar");
-        // หา category_id ที่มีจริงใน data
         const usedIds = [
           ...new Set(allProducts.map((p) => p.category_id).filter(Boolean)),
         ];
@@ -209,26 +203,14 @@
             CATEGORY_MAP[product.category_id] ||
             product.category_name ||
             "ทั่วไป";
-
-          // 💡 จุดที่เพิ่ม: ดึง URL รูปภาพ (เปลี่ยน 'Condition_' เป็นชื่อคอลัมน์จริงที่คุณส่งมาจาก Backend)
-          // ถ้าไม่มีรูป ให้แสดงรูป Placeholder แทน
-          const imageUrl =
-            product.Condition_ ||
-            product.image_url ||
-            "https://placehold.co/400x250?text=No+Image";
-
-          // 💡 จุดที่เพิ่ม: โครงสร้าง HTML ใหม่ที่รองรับรูปภาพ
           card.innerHTML = `
-                    <img src="${imageUrl}" alt="${brand} ${model}" class="product-image" onerror="this.src='https://placehold.co/400x250?text=Image+Error'">
-                    <div class="product-info-wrapper">
-                        <div>
-                            <div class="product-category">${displayCategory}</div>
-                            <h3 class="product-name">${brand} ${model}</h3>
-                        </div>
-                        <div>
-                            <div class="product-price">฿${Number(dailyRate).toLocaleString()} / วัน</div>
-                            <button class="rent-btn" onclick="addToCart('${equipmentId}')">เลือกเช่าอุปกรณ์นี้</button>
-                        </div>
+                    <div>
+                        <div class="product-category">${displayCategory}</div>
+                        <h3 class="product-name">${brand} ${model}</h3>
+                    </div>
+                    <div>
+                        <div class="product-price">฿${Number(dailyRate).toLocaleString()} / วัน</div>
+                        <button class="rent-btn" onclick="addToCart('${equipmentId}')">เลือกเช่าอุปกรณ์นี้</button>
                     </div>
                 `;
           container.appendChild(card);
@@ -276,15 +258,20 @@
 
       function renderCartItems() {
         const list = document.getElementById("cart-items-list");
-        document.getElementById("modal-count").textContent = cart.length;
-        document.getElementById("modal-total").textContent = cart.length;
-        document.getElementById("confirm-btn").disabled = cart.length === 0;
 
+        // ต้องเพิ่มโค้ดนี้เพื่อไม่ให้ error ถ้า list หาไม่เจอ (แต่กรณีนี้มีใน HTML แล้ว)
         if (cart.length === 0) {
           list.innerHTML =
             '<div class="cart-empty">ตะกร้ายังว่างอยู่ครับ<br>เลือกอุปกรณ์ที่ต้องการก่อนนะ</div>';
+          document.getElementById("modal-count").textContent = 0;
+          document.getElementById("modal-total").textContent = 0;
+          document.getElementById("confirm-btn").disabled = true;
           return;
         }
+
+        document.getElementById("modal-count").textContent = cart.length;
+        document.getElementById("modal-total").textContent = cart.length;
+        document.getElementById("confirm-btn").disabled = false;
 
         list.innerHTML = cart
           .map(
@@ -294,7 +281,7 @@
                         <div class="cart-item-name">${item.brand} ${item.model}</div>
                         <div class="cart-item-meta">${CATEGORY_MAP[item.category_id] || item.category_name || "ทั่วไป"} · ฿${Number(item.daily_rate).toLocaleString()}/วัน</div>
                     </div>
-                    <button class="cart-item-remove" onclick="removeFromCart(${i})">ลบ</button>
+                    <button class="delete-btn" onclick="removeFromCart(${i})" title="ลบ">🗑</button>
                 </div>
             `,
           )
@@ -317,47 +304,51 @@
         if (e.target === e.currentTarget) hideConfirmDialog();
       }
 
-      async function confirmOrder() {
-        if (cart.length === 0) {
-          alert("ตะกร้าว่างเปล่า กรุณาเลือกสินค้าก่อนครับ");
+      // 🟢 3. แก้ไขฟังก์ชันยืนยันการทำรายการให้ฉลาดขึ้น!
+      // 🟢 3. แก้ไขฟังก์ชันยืนยันการทำรายการให้รับข้อมูลตรงกับ Backend
+      async function doConfirm() {
+        const userId = localStorage.getItem("user_id");
+
+        // 3.1 เช็คว่าเข้าสู่ระบบหรือยัง
+        if (!userId) {
+          alert("กรุณาเข้าสู่ระบบก่อนทำการเช่า");
+          window.location.href = "login.html"; // เด้งไปหน้า login
           return;
         }
 
-        // เก็บข้อมูลตะกร้าลง LocalStorage เพื่อใช้ในหน้าถัดไป
+        // 3.2 บันทึกข้อมูลตะกร้าลง LocalStorage
+        let totalAmount = 0;
+        cart.forEach((item) => (totalAmount += Number(item.daily_rate)));
+        localStorage.setItem("cartTotalAmount", totalAmount);
         localStorage.setItem("cartData", JSON.stringify(cart));
 
-        // 1. ตรวจสอบว่าล็อกอินหรือยัง
-        const userStr = localStorage.getItem("user");
-        if (!userStr) {
-          // ลบ showAuthModal() และการบังคับ login ออก
-          // เปลี่ยนหน้าไปหน้า customer เพื่อให้กรอกข้อมูลทันที
-          window.location.href = "customer.html?fromCart=true";
-          return;
-        }
+        hideConfirmDialog();
+        closeCartModal();
 
-        const user = JSON.parse(userStr);
-        const userId = user.user_id || user.id; // ดักเผื่อใช้ user.id
-
+        // 3.3 เช็คว่าเคยกรอกข้อมูล Profile (Customer) หรือยัง
         try {
-          // 2. ตรวจสอบว่า User นี้เคยกรอกข้อมูล Customer หรือยัง
-          const response = await fetch(
-            `http://localhost:3000/get-customer-profile/${userId}`,
+          // เปลี่ยน IP เป็น localhost ให้ตรงกันเพื่อป้องกันปัญหา
+          const res = await fetch(
+            `http://localhost:3000/check-customer/${userId}`,
           );
-          const customerData = await response.json();
+          const data = await res.json();
 
-          if (customerData.notFound || !customerData.customer_id) {
-            // ถ้ายังไม่มีข้อมูลลูกค้า -> ไปหน้ากรอกชื่อ/เบอร์โทร
-            alert("กรุณากรอกข้อมูลผู้เช่าก่อนทำรายการครับ");
-            window.location.href = "customer.html?fromCart=true";
+          // 🟢 แก้ให้ตรงกับหลังบ้าน (ใช้ data.exists แทน data.hasProfile)
+          if (data.exists === true) {
+            // ถ้ามีประวัติแล้ว ให้จำ customer_id ไว้ แล้วข้ามไปหน้าเช่าหลัก
+            localStorage.setItem("customer_id", data.customer.customer_id);
+            console.log("พบประวัติลูกค้า ไปหน้าเช่าต่อได้เลย");
+            window.location.href = "rental.html"; // เปลี่ยนชื่อไฟล์ตรงนี้ให้ตรงกับหน้าเช่าของคุณนะครับ
           } else {
-            // ถ้ามีข้อมูลแล้ว -> ไปหน้าเปิดบิลเช่าได้เลย
-            localStorage.setItem("customer_id", customerData.customer_id);
-            window.location.href = "rental.html";
+            // ถ้ายังไม่เคยกรอกชื่อ-เบอร์โทร ให้ไปหน้า customer.html
+            alert("กรุณากรอกข้อมูลส่วนตัวครั้งแรกก่อนเริ่มทำการเช่า");
+            window.location.href = "customer.html";
           }
         } catch (error) {
-          console.error("Error checking customer:", error);
-          // กรณีมีข้อผิดพลาดให้ไปหน้า customer เลยเพื่อไม่ให้ค้าง
-          window.location.href = "customer.html?fromCart=true";
+          console.error("ตรวจสอบข้อมูลลูกค้าล้มเหลว", error);
+          alert(
+            "ระบบขัดข้อง ไม่สามารถตรวจสอบข้อมูลลูกค้าได้ โปรดตรวจสอบเซิร์ฟเวอร์",
+          );
         }
       }
 
@@ -397,135 +388,6 @@
       }
 
       fetchEquipment();
-
-      // --- ระบบ User Authentication ---
-      let isLoginMode = true;
-      let currentUser = null; // เก็บข้อมูล user ที่ล็อกอิน
-
-      // ตรวจสอบสถานะตอนโหลดหน้าเว็บ
-      function checkLoginStatus() {
-        const savedUser = localStorage.getItem("user");
-        if (savedUser) {
-          currentUser = JSON.parse(savedUser);
-
-          // ซ่อนปุ่มเข้าสู่ระบบ แสดงโปรไฟล์
-          document.getElementById("login-btn").style.display = "none";
-          document.getElementById("user-profile").style.display = "flex";
-          document.getElementById("username-display").textContent =
-            currentUser.username;
-
-          // 💡 เช็ค Role ว่าเป็น Admin หรือไม่
-          if (currentUser.role === "admin") {
-            // ถ้าเป็นแอดมิน อาจจะแสดงปุ่ม "จัดการระบบหลังบ้าน" เพิ่มขึ้นมา
-            if (!document.getElementById("admin-btn")) {
-              const adminBtn = document.createElement("button");
-              adminBtn.id = "admin-btn";
-              adminBtn.textContent = "⚙️ จัดการระบบ";
-              adminBtn.className = "auth-btn";
-              adminBtn.onclick = () =>
-                (window.location.href = "admin-dashboard.html");
-              document.getElementById("user-profile").prepend(adminBtn);
-            }
-          }
-        } else {
-          document.getElementById("login-btn").style.display = "block";
-          document.getElementById("user-profile").style.display = "none";
-          const adminBtn = document.getElementById("admin-btn");
-          if (adminBtn) adminBtn.remove();
-        }
-      }
-
-      function showAuthModal() {
-        document.getElementById("auth-overlay").classList.add("open");
-      }
-
-      function closeAuthModal() {
-        document.getElementById("auth-overlay").classList.remove("open");
-      }
-
-      function handleAuthOverlayClick(e) {
-        if (e.target === e.currentTarget) closeAuthModal();
-      }
-
-      function toggleAuthMode() {
-        isLoginMode = !isLoginMode;
-        document.getElementById("auth-title").textContent = isLoginMode
-          ? "เข้าสู่ระบบ"
-          : "สมัครสมาชิก";
-        document.getElementById("auth-submit-btn").textContent = isLoginMode
-          ? "เข้าสู่ระบบ"
-          : "สมัครสมาชิก";
-        document.getElementById("auth-toggle-text").textContent = isLoginMode
-          ? "ยังไม่มีบัญชีใช่ไหม?"
-          : "มีบัญชีอยู่แล้วใช่ไหม?";
-        document.getElementById("auth-name").style.display = isLoginMode
-          ? "none"
-          : "block";
-      }
-
-      async function processAuth() {
-        const email = document.getElementById("auth-email").value;
-        const password = document.getElementById("auth-password").value;
-        const name = document.getElementById("auth-name").value;
-
-        if (!email || !password) {
-          showToast("กรุณากรอกอีเมลและรหัสผ่าน");
-          return;
-        }
-
-        try {
-          const endpoint = isLoginMode ? "/login" : "/register";
-          // 💡 เปลี่ยน URL ให้ตรงกับ Backend ของคุณ
-          const res = await fetch("http://127.0.0.1:3000" + endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, name }),
-          });
-
-          const data = await res.json();
-
-          if (!res.ok) {
-            // ถ้า Backend ส่ง error กลับมา ให้แจ้งเตือน
-            showToast("❌ " + (data.error || "เกิดข้อผิดพลาด"));
-            return;
-          }
-
-          if (isLoginMode) {
-            // กรณี Login สำเร็จ ให้เก็บข้อมูลลง LocalStorage
-            localStorage.setItem("user", JSON.stringify(data.user));
-            currentUser = data.user;
-            checkLoginStatus();
-            closeAuthModal();
-            showToast("เข้าสู่ระบบสำเร็จ! 🎉");
-          } else {
-            // กรณี Register สำเร็จ ให้สลับไปหน้า Login อัตโนมัติ
-            showToast("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ 🎉");
-            toggleAuthMode();
-          }
-
-          // เคลียร์ค่าในช่องกรอก
-          document.getElementById("auth-email").value = "";
-          document.getElementById("auth-password").value = "";
-          document.getElementById("auth-name").value = "";
-        } catch (err) {
-          console.error(err);
-          showToast("❌ เกิดข้อผิดพลาดในการเชื่อมต่อกับเซิร์ฟเวอร์");
-        }
-      }
-
-      function logout() {
-        localStorage.removeItem("user");
-        currentUser = null;
-        checkLoginStatus();
-        showToast("ออกจากระบบแล้ว");
-
-        // ล้างตะกร้าสินค้าเมื่อออกจากระบบ (Optional)
-        cart = [];
-        updateCartUI();
-      }
-
-      // เรียกใช้ตอนโหลดหน้าเว็บ
-      checkLoginStatus();
     </script>
   </body>
 </html>
