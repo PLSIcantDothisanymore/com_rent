@@ -142,12 +142,25 @@ app.get("/all-category", async (req, res) => {
     }
 });
 
-app.get("/all-equipment", async (req, res) => {
+app.get('/all-equipment', async (req, res) => {
     try {
-        const rows = await pool.query("SELECT * FROM equipment");
-        return res.json(rows);
+        // ใช้ JOIN เพื่อดึง category_name จากตาราง Categories มาด้วย
+        const sql = `
+            SELECT e.*, c.category_name 
+            FROM Equipments e
+            LEFT JOIN category c ON e.category_id = c.category_id
+        `;
+        
+        const [rows] = await pool.query(sql); 
+
+        return res.status(200).json(rows);
+
     } catch (error) {
-        return res.status(500).json({ message: "Error", errorDetail: error.message });
+        console.error("Error fetching equipment:", error);
+        return res.status(500).json({ 
+            message: "ไม่สามารถดึงข้อมูลอุปกรณ์ได้", 
+            errorDetail: error.message 
+        });
     }
 });
 
